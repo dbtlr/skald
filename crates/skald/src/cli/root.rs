@@ -74,7 +74,7 @@ pub enum ConfigAction {
     Show,
     /// Eject prompt templates for customization
     Eject {
-        /// Eject to project directory (.tool/prompts/) instead of global
+        /// Eject to project directory (.skald/prompts/) instead of global
         #[arg(long)]
         project: bool,
         /// Specific template name to eject (ejects all if omitted)

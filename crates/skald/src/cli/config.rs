@@ -54,7 +54,7 @@ pub fn run_init() -> i32 {
 
 pub fn run_eject(project: bool, name: Option<&str>) -> i32 {
     let target_dir = if project {
-        std::env::current_dir().unwrap_or_default().join(".tool").join("prompts")
+        std::env::current_dir().unwrap_or_default().join(".skald").join("prompts")
     } else {
         skald_core::config::config_dir().join("prompts")
     };

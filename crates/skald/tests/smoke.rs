@@ -157,7 +157,7 @@ fn config_eject_single_template() {
 fn config_eject_project_flag() {
     let tmp = tempfile::tempdir().unwrap();
     sk().args(["config", "eject", "--project"]).current_dir(tmp.path()).assert().success();
-    assert!(tmp.path().join(".tool/prompts/commit-title.md").exists());
+    assert!(tmp.path().join(".skald/prompts/commit-title.md").exists());
 }
 
 #[test]
