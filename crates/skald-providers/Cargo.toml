@@ -1,0 +1,11 @@
+[package]
+name = "skald-providers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "AI provider trait and implementations for skald"
+
+[dependencies]
+async-trait = "0.1"
+thiserror = "2"
