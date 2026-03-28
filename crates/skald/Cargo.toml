@@ -13,6 +13,8 @@ path = "src/main.rs"
 
 [dependencies]
 skald-core = { path = "../skald-core", features = ["cli"] }
+skald-vcs = { path = "../skald-vcs" }
+skald-providers = { path = "../skald-providers" }
 clap = { version = "4", features = ["derive"] }
 clap_complete = "4"
 cliclack = "0.3"

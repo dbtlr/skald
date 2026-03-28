@@ -40,6 +40,33 @@ pub enum Command {
         /// Render the prompt and print to stdout without calling AI
         #[arg(long)]
         show_prompt: bool,
+        /// Generate one message and commit immediately
+        #[arg(long)]
+        auto: bool,
+        /// Print messages to stdout without committing
+        #[arg(long)]
+        message_only: bool,
+        /// Number of suggestions to generate
+        #[arg(short = 'n', long = "num", default_value = "3")]
+        count: usize,
+        /// Stage tracked modified files before committing (git add -u)
+        #[arg(short = 'a')]
+        stage_tracked: bool,
+        /// Stage all files including untracked (git add -A)
+        #[arg(short = 'A', long = "all")]
+        stage_all: bool,
+        /// Amend the previous commit
+        #[arg(long)]
+        amend: bool,
+        /// Provide context about the changes
+        #[arg(long)]
+        context: Option<String>,
+        /// Read context from a file
+        #[arg(long)]
+        context_file: Option<std::path::PathBuf>,
+        /// Print what would be committed without executing
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Generate PR title and description
     Pr {
