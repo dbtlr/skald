@@ -25,7 +25,7 @@ pub fn eject_prompts(target_dir: &Path, names: Option<&[&str]>) -> Result<Vec<St
             continue; // don't overwrite existing
         }
         let content = builtin::get_builtin(name).unwrap();
-        let full_content = format!("{}{content}", builtin::EJECT_HEADER);
+        let full_content = format!("{}\n{content}", builtin::EJECT_HEADER);
         std::fs::write(&path, full_content).map_err(|e| SkaldError::PromptEject {
             name: name.to_string(),
             detail: e.to_string(),
