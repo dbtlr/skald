@@ -57,7 +57,11 @@ pub enum Command {
         source: bool,
     },
     /// Validate environment, config, and provider connectivity
-    Doctor,
+    Doctor {
+        /// Auto-fix all fixable issues
+        #[arg(long)]
+        fix: bool,
+    },
     /// Generate shell completions
     Completions {
         /// Shell to generate completions for
