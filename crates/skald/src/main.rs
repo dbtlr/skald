@@ -2,11 +2,29 @@ mod cli;
 mod ui;
 
 use clap::Parser;
-use cli::{Cli, Command};
+use cli::{Cli, Command, ConfigAction};
 use std::process;
 
 fn main() {
-    let cli = Cli::parse();
+    let raw_args: Vec<String> = std::env::args().collect();
+
+    // Load config early (before clap). Non-fatal — store Result.
+    let config_result = skald_core::config::load_config();
+
+    // Expand aliases if config loaded and has aliases
+    let effective_args = if let Ok(ref cfg) = config_result {
+        if let Some(expanded) = skald_core::config::expand_alias(&raw_args[1..], &cfg.aliases) {
+            let mut full = vec![raw_args[0].clone()];
+            full.extend(expanded);
+            full
+        } else {
+            raw_args.clone()
+        }
+    } else {
+        raw_args.clone()
+    };
+
+    let cli = Cli::parse_from(&effective_args);
 
     // Initialize color state
     let use_color = cli.should_use_color();
@@ -27,36 +45,44 @@ fn main() {
         "skald starting"
     );
 
+    let fmt = cli.effective_format();
+    let is_tty = atty::is(atty::Stream::Stdout);
+
     let code = match cli.command {
         Command::Completions { shell } => {
             cli::completions::run(shell);
             0
         }
         Command::Commit => {
-            cliclack::log::warning("Not yet implemented — coming in M1.").ok();
-            0
-        }
-        Command::Pr => {
             cliclack::log::warning("Not yet implemented — coming in M2.").ok();
             0
         }
-        Command::Config => {
-            let fmt = cli.effective_format();
-            let is_tty = atty::is(atty::Stream::Stdout);
-            let headers = vec!["Key", "Value", "Source"];
-            let rows = vec![
-                vec!["provider".into(), "(not configured)".into(), "default".into()],
-                vec!["model".into(), "(not configured)".into(), "default".into()],
-            ];
-            print!("{}", fmt.render_rows(&headers, &rows, is_tty));
-            0
-        }
-        Command::Aliases => {
-            cliclack::log::warning("Not yet implemented — coming in M1.").ok();
-            0
-        }
-        Command::Doctor => {
+        Command::Pr => {
             cliclack::log::warning("Not yet implemented — coming in M3.").ok();
+            0
+        }
+        Command::Config { action } => {
+            let action = action.unwrap_or(ConfigAction::Show);
+            match action {
+                ConfigAction::Init => cli::config::run_init(),
+                ConfigAction::Show => match config_result {
+                    Ok(ref cfg) => cli::config::run_show(cfg, fmt, is_tty),
+                    Err(ref e) => {
+                        cliclack::log::error(format!("Failed to load config: {e}")).ok();
+                        1
+                    }
+                },
+            }
+        }
+        Command::Aliases { source } => match config_result {
+            Ok(ref cfg) => cli::aliases::run_aliases(cfg, fmt, is_tty, source),
+            Err(ref e) => {
+                cliclack::log::error(format!("Failed to load config: {e}")).ok();
+                1
+            }
+        },
+        Command::Doctor => {
+            cliclack::log::warning("Not yet implemented — coming in M4.").ok();
             0
         }
     };

@@ -38,9 +38,16 @@ pub enum Command {
     /// Generate PR title and description
     Pr,
     /// View and manage configuration
-    Config,
+    Config {
+        #[command(subcommand)]
+        action: Option<ConfigAction>,
+    },
     /// List active aliases and their sources
-    Aliases,
+    Aliases {
+        /// Show which config file each alias comes from
+        #[arg(long)]
+        source: bool,
+    },
     /// Validate environment, config, and provider connectivity
     Doctor,
     /// Generate shell completions
@@ -49,6 +56,14 @@ pub enum Command {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum ConfigAction {
+    /// Create a default global config file
+    Init,
+    /// Display the resolved configuration
+    Show,
 }
 
 impl Cli {
