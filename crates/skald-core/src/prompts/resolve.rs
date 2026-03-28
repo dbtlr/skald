@@ -31,7 +31,7 @@ pub fn resolve_template_with_dirs(
         });
     }
 
-    let filename = format!("{name}.tera");
+    let filename = format!("{name}.md");
 
     // 2. Project-level override
     if let Some(project_dir) = project_prompts_dir {
@@ -70,7 +70,7 @@ mod tests {
     fn setup_dir(base: &Path, name: &str, content: &str) -> PathBuf {
         let dir = base.join("prompts");
         fs::create_dir_all(&dir).unwrap();
-        fs::write(dir.join(format!("{name}.tera")), content).unwrap();
+        fs::write(dir.join(format!("{name}.md")), content).unwrap();
         dir
     }
 
@@ -106,7 +106,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let global_dir = setup_dir(&tmp.path().join("global"), "system", "global override");
         let project_dir = setup_dir(&tmp.path().join("project"), "system", "project override");
-        let cli_file = tmp.path().join("custom.tera");
+        let cli_file = tmp.path().join("custom.md");
         fs::write(&cli_file, "cli override").unwrap();
 
         let result = resolve_template_with_dirs(
@@ -123,7 +123,7 @@ mod tests {
     fn cli_flag_missing_file_errors() {
         let result = resolve_template_with_dirs(
             "system",
-            Some(Path::new("/nonexistent/custom.tera")),
+            Some(Path::new("/nonexistent/custom.md")),
             None,
             None,
         );
