@@ -53,13 +53,53 @@ fn main() {
             cli::completions::run(shell);
             0
         }
-        Command::Commit => {
-            cliclack::log::warning("Not yet implemented — coming in M2.").ok();
-            0
+        Command::Commit { show_prompt } => {
+            if show_prompt {
+                let ctx = skald_core::prompts::mock_prompt_context();
+                match skald_core::prompts::resolve_template("commit-title", None, None) {
+                    Ok(template) => match skald_core::prompts::render_prompt(&template, &ctx) {
+                        Ok(rendered) => {
+                            print!("{rendered}");
+                            0
+                        }
+                        Err(e) => {
+                            cliclack::log::error(e.to_string()).ok();
+                            1
+                        }
+                    },
+                    Err(e) => {
+                        cliclack::log::error(e.to_string()).ok();
+                        1
+                    }
+                }
+            } else {
+                cliclack::log::warning("Not yet implemented — coming in M4.").ok();
+                0
+            }
         }
-        Command::Pr => {
-            cliclack::log::warning("Not yet implemented — coming in M3.").ok();
-            0
+        Command::Pr { show_prompt } => {
+            if show_prompt {
+                let ctx = skald_core::prompts::mock_prompt_context();
+                match skald_core::prompts::resolve_template("pr-title", None, None) {
+                    Ok(template) => match skald_core::prompts::render_prompt(&template, &ctx) {
+                        Ok(rendered) => {
+                            print!("{rendered}");
+                            0
+                        }
+                        Err(e) => {
+                            cliclack::log::error(e.to_string()).ok();
+                            1
+                        }
+                    },
+                    Err(e) => {
+                        cliclack::log::error(e.to_string()).ok();
+                        1
+                    }
+                }
+            } else {
+                cliclack::log::warning("Not yet implemented — coming in M8.").ok();
+                0
+            }
         }
         Command::Config { action } => {
             let action = action.unwrap_or(ConfigAction::Show);
@@ -72,6 +112,9 @@ fn main() {
                         1
                     }
                 },
+                ConfigAction::Eject { project, name } => {
+                    cli::config::run_eject(project, name.as_deref())
+                }
             }
         }
         Command::Aliases { source } => match config_result {

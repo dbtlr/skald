@@ -35,6 +35,15 @@ pub enum SkaldError {
     #[error("Alias '{name}' does not start with a known command")]
     AliasInvalidCommand { name: String },
 
+    #[error("Prompt template '{name}' not found")]
+    PromptNotFound { name: String },
+
+    #[error("Failed to render prompt '{name}': {detail}")]
+    PromptRender { name: String, detail: String },
+
+    #[error("Failed to eject prompt '{name}': {detail}")]
+    PromptEject { name: String, detail: String },
+
     #[error("{message}")]
     Other { message: String },
 }
@@ -65,6 +74,12 @@ impl SkaldError {
             Self::AliasInvalidCommand { .. } => Some(
                 "Alias expansions must start with a built-in command: commit, pr, config, aliases, doctor, or completions.",
             ),
+            Self::PromptNotFound { .. } => Some(
+                "Check template name. Available: system, commit-title, commit-body, pr-title, pr-description",
+            ),
+            Self::PromptRender { .. } => {
+                Some("Check template syntax. Tera docs: https://keats.github.io/tera/docs/")
+            }
             _ => None,
         }
     }
@@ -81,7 +96,10 @@ impl SkaldError {
             | Self::EnvVarNotSet { .. }
             | Self::AliasRecursive { .. }
             | Self::AliasShadowsBuiltin { .. }
-            | Self::AliasInvalidCommand { .. } => 1,
+            | Self::AliasInvalidCommand { .. }
+            | Self::PromptNotFound { .. }
+            | Self::PromptRender { .. }
+            | Self::PromptEject { .. } => 1,
         }
     }
 }

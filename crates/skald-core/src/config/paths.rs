@@ -16,11 +16,11 @@ pub fn global_config_path() -> PathBuf {
     config_dir().join("config.yaml")
 }
 
-/// Walk up from `start` looking for `.toolrc.yaml`, returning the first found.
+/// Walk up from `start` looking for `.skaldrc.yaml`, returning the first found.
 pub fn discover_project_config(start: &Path) -> Option<PathBuf> {
     let mut dir = start.to_path_buf();
     loop {
-        let candidate = dir.join(".toolrc.yaml");
+        let candidate = dir.join(".skaldrc.yaml");
         if candidate.is_file() {
             return Some(candidate);
         }
