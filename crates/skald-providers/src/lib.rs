@@ -1,9 +1,12 @@
 use async_trait::async_trait;
 
+pub mod claude_cli;
+
 #[derive(Debug, Clone)]
 pub struct CommitContext {
     pub diff: String,
     pub stat: String,
+    pub rendered_prompt: String,
     pub extra_context: Option<String>,
 }
 
