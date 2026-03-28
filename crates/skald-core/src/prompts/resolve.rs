@@ -6,14 +6,14 @@ use crate::error::{Result, SkaldError};
 use super::builtin::get_builtin;
 
 /// Resolve a prompt template by name using the resolution chain:
-/// CLI flag -> project `.tool/prompts/` -> global `~/.config/skald/prompts/` -> built-in.
+/// CLI flag -> project `.skald/prompts/` -> global `~/.config/skald/prompts/` -> built-in.
 pub fn resolve_template(
     name: &str,
     prompt_flag: Option<&Path>,
     project_dir: Option<&Path>,
 ) -> Result<String> {
     let global_prompts = config_dir().join("prompts");
-    let project_prompts = project_dir.map(|d| d.join(".tool").join("prompts"));
+    let project_prompts = project_dir.map(|d| d.join(".skald").join("prompts"));
     resolve_template_with_dirs(name, prompt_flag, project_prompts.as_deref(), Some(&global_prompts))
 }
 

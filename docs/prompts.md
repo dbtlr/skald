@@ -17,7 +17,7 @@ Skald uses a template system for all AI prompts. Every prompt is a [Tera](https:
 When skald needs a prompt template, it searches in this order:
 
 1. **CLI flag** — direct file path via `--prompt` flag (future)
-2. **Project config** — `.tool/prompts/<name>.md` in the project root
+2. **Project config** — `.skald/prompts/<name>.md` in the project root
 3. **Global config** — `~/.config/skald/prompts/<name>.md`
 4. **Built-in default** — compiled into the binary
 
@@ -48,7 +48,7 @@ sk config eject
 # Eject a single template
 sk config eject commit-title
 
-# Eject to project directory (.tool/prompts/)
+# Eject to project directory (.skald/prompts/)
 sk config eject --project
 sk config eject --project commit-title
 ```
