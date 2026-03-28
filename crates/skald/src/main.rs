@@ -55,29 +55,42 @@ fn main() {
             cli::completions::run(shell);
             0
         }
-        Command::Commit { show_prompt } => {
-            if show_prompt {
-                let ctx = skald_core::prompts::mock_prompt_context();
-                match skald_core::prompts::resolve_template("commit-title", None, None) {
-                    Ok(template) => match skald_core::prompts::render_prompt(&template, &ctx) {
-                        Ok(rendered) => {
-                            print!("{rendered}");
-                            0
-                        }
-                        Err(e) => {
-                            cliclack::log::error(e.to_string()).ok();
-                            1
-                        }
-                    },
-                    Err(e) => {
-                        cliclack::log::error(e.to_string()).ok();
-                        1
-                    }
+        Command::Commit {
+            show_prompt,
+            auto,
+            message_only,
+            count,
+            stage_tracked,
+            stage_all,
+            amend,
+            context,
+            context_file,
+            dry_run,
+        } => {
+            let config = match config_result {
+                Ok(ref cfg) => cfg,
+                Err(ref e) => {
+                    cliclack::log::error(format!("Failed to load config: {e}")).ok();
+                    process::exit(1);
                 }
-            } else {
-                cliclack::log::warning("Not yet implemented — coming in M4.").ok();
-                0
-            }
+            };
+            cli::commit::run_commit(
+                cli::commit::CommitOptions {
+                    show_prompt,
+                    auto,
+                    message_only,
+                    count,
+                    stage_tracked,
+                    stage_all,
+                    amend,
+                    context,
+                    context_file,
+                    dry_run,
+                    format: fmt,
+                    is_tty,
+                },
+                config,
+            )
         }
         Command::Pr { show_prompt } => {
             if show_prompt {

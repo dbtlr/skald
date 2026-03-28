@@ -39,8 +39,11 @@ fn completions_fish_outputs_script() {
 }
 
 #[test]
-fn commit_stub_shows_message() {
-    sk().arg("commit").assert().success().stderr(predicate::str::contains("Not yet implemented"));
+fn commit_bare_shows_interactive_not_implemented() {
+    sk().arg("commit")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Interactive mode not yet implemented"));
 }
 
 #[test]
