@@ -19,7 +19,7 @@ There are **no configurable defaults** for command behavior. Bare commands alway
 Resolution order for all configurable values (most specific wins):
 
 ```
-CLI flag  →  project config (.toolrc.yaml)  →  global config (~/.config/skald/config.yaml)  →  built-in default
+CLI flag  →  project config (.skaldrc.yaml)  →  global config (~/.config/skald/config.yaml)  →  built-in default
 ```
 
 Never deviate from this order. It applies to context values, prompt templates, and aliases.
@@ -38,8 +38,8 @@ Aliases cannot: reference other aliases (no recursion), shadow builtin commands,
 
 - Global: `$XDG_CONFIG_HOME/skald/config.yaml` (default: `~/.config/skald/config.yaml`)
 - Global prompts: `~/.config/skald/prompts/`
-- Project: `.toolrc.yaml` in repo root
-- Project prompts: `.tool/prompts/` in repo root
+- Project: `.skaldrc.yaml` in repo root
+- Project prompts: `.skald/prompts/` in repo root
 - Windows: `%LOCALAPPDATA%\skald\`
 
 ## Env Var Expansion

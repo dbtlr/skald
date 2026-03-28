@@ -52,6 +52,42 @@ pub fn run_init() -> i32 {
     0
 }
 
+pub fn run_eject(project: bool, name: Option<&str>) -> i32 {
+    let target_dir = if project {
+        std::env::current_dir().unwrap_or_default().join(".skald").join("prompts")
+    } else {
+        skald_core::config::config_dir().join("prompts")
+    };
+
+    let names: Option<Vec<&str>> = name.map(|n| vec![n]);
+    let names_ref = names.as_deref();
+
+    match skald_core::prompts::eject_prompts(&target_dir, names_ref) {
+        Ok(written) => {
+            if written.is_empty() {
+                cliclack::log::info(format!(
+                    "All templates already exist in {}",
+                    target_dir.display()
+                ))
+                .ok();
+            } else {
+                for name in &written {
+                    cliclack::log::success(format!(
+                        "Ejected {name}.md → {}",
+                        target_dir.join(format!("{name}.md")).display()
+                    ))
+                    .ok();
+                }
+            }
+            0
+        }
+        Err(e) => {
+            cliclack::log::error(e.to_string()).ok();
+            1
+        }
+    }
+}
+
 pub fn run_show(config: &ResolvedConfig, format: OutputFormat, is_tty: bool) -> i32 {
     let headers = vec!["Key", "Value", "Source"];
 

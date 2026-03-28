@@ -8,7 +8,7 @@ Skald uses YAML configuration files with a layered merge strategy.
 |---------|---------------------------------------------|
 | Global  | `~/.config/skald/config.yaml` (Linux/macOS) |
 | Global  | `%APPDATA%\skald\config.yaml` (Windows)     |
-| Project | `.toolrc.yaml` (discovered upward from cwd) |
+| Project | `.skaldrc.yaml` (discovered upward from cwd) |
 
 The global config path respects `XDG_CONFIG_HOME` on Linux.
 
@@ -96,7 +96,7 @@ language: English
 
 ## Example: Project Override
 
-`.toolrc.yaml` in a project root:
+`.skaldrc.yaml` in a project root:
 
 ```yaml
 pr_target: develop
