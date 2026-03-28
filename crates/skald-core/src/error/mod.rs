@@ -23,6 +23,18 @@ pub enum SkaldError {
     #[error("{0}")]
     Io(#[from] std::io::Error),
 
+    #[error("Environment variable ${name} is not set (referenced in {context})")]
+    EnvVarNotSet { name: String, context: String },
+
+    #[error("Alias '{name}' is recursive — its expansion references another alias")]
+    AliasRecursive { name: String },
+
+    #[error("Alias '{name}' shadows built-in command '{command}'")]
+    AliasShadowsBuiltin { name: String, command: String },
+
+    #[error("Alias '{name}' does not start with a known command")]
+    AliasInvalidCommand { name: String },
+
     #[error("{message}")]
     Other { message: String },
 }
@@ -40,6 +52,19 @@ impl SkaldError {
             Self::NoStagedChanges => {
                 Some("Stage files with `git add <files>` or use `sk commit -a` to auto-stage.")
             }
+            Self::EnvVarNotSet { .. } => {
+                // Can't format dynamically in a &str, so give generic advice
+                Some("Set the environment variable or remove the $reference from your config.")
+            }
+            Self::AliasRecursive { .. } => {
+                Some("An alias expansion must start with a built-in command, not another alias.")
+            }
+            Self::AliasShadowsBuiltin { .. } => Some(
+                "Choose a different name for this alias — built-in commands can't be overridden.",
+            ),
+            Self::AliasInvalidCommand { .. } => Some(
+                "Alias expansions must start with a built-in command: commit, pr, config, aliases, doctor, or completions.",
+            ),
             _ => None,
         }
     }
@@ -52,7 +77,11 @@ impl SkaldError {
             | Self::ProviderNotConfigured { .. }
             | Self::ProviderError { .. }
             | Self::NotInRepo
-            | Self::NoStagedChanges => 1,
+            | Self::NoStagedChanges
+            | Self::EnvVarNotSet { .. }
+            | Self::AliasRecursive { .. }
+            | Self::AliasShadowsBuiltin { .. }
+            | Self::AliasInvalidCommand { .. } => 1,
         }
     }
 }
