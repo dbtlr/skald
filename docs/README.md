@@ -2,3 +2,5 @@
 
 - [Getting Started](getting-started.md) — Install, first run, basic usage
 - [CLI Reference](cli-reference.md) — Commands, flags, output formats
+- [Configuration](configuration.md) — Config files, schema, merge rules, env vars
+- [Aliases](aliases.md) — Composable flag shortcuts for commands
