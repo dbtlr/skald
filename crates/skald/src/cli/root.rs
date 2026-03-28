@@ -1,3 +1,5 @@
+use std::io::IsTerminal;
+
 use clap::Parser;
 use skald_core::output::OutputFormat;
 
@@ -91,7 +93,7 @@ impl Cli {
         if let Some(fmt) = self.format {
             return fmt;
         }
-        if atty::is(atty::Stream::Stdout) { OutputFormat::Table } else { OutputFormat::Plain }
+        if std::io::stdout().is_terminal() { OutputFormat::Table } else { OutputFormat::Plain }
     }
 
     pub fn should_use_color(&self) -> bool {
@@ -101,6 +103,6 @@ impl Cli {
         if std::env::var_os("NO_COLOR").is_some() {
             return false;
         }
-        atty::is(atty::Stream::Stdout)
+        std::io::stdout().is_terminal()
     }
 }
