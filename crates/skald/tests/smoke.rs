@@ -50,12 +50,60 @@ fn pr_stub_shows_message() {
 
 #[test]
 fn config_runs() {
+    // `sk config` defaults to `sk config show`
     sk().arg("config").assert().success();
 }
 
 #[test]
-fn aliases_stub_shows_message() {
-    sk().arg("aliases").assert().success().stderr(predicate::str::contains("Not yet implemented"));
+fn config_show_runs() {
+    sk().args(["config", "show"]).assert().success();
+}
+
+#[test]
+fn config_plain_format() {
+    sk().args(["config", "show", "--format", "plain"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("provider"));
+}
+
+#[test]
+fn config_json_format() {
+    sk().args(["config", "show", "--format", "json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("["));
+}
+
+#[test]
+fn config_init_creates_file() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["config", "init"]).env("XDG_CONFIG_HOME", tmp.path()).assert().success();
+    assert!(tmp.path().join("skald/config.yaml").exists());
+}
+
+#[test]
+fn config_init_existing_shows_info() {
+    let tmp = tempfile::tempdir().unwrap();
+    let config_dir = tmp.path().join("skald");
+    std::fs::create_dir_all(&config_dir).unwrap();
+    std::fs::write(config_dir.join("config.yaml"), "provider: test\n").unwrap();
+
+    sk().args(["config", "init"])
+        .env("XDG_CONFIG_HOME", tmp.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("already exists"));
+}
+
+#[test]
+fn aliases_exits_zero() {
+    sk().arg("aliases").assert().success();
+}
+
+#[test]
+fn aliases_source_exits_zero() {
+    sk().args(["aliases", "--source"]).assert().success();
 }
 
 #[test]
@@ -69,22 +117,6 @@ fn unknown_command_shows_error() {
         .assert()
         .failure()
         .stderr(predicate::str::contains("unrecognized subcommand"));
-}
-
-#[test]
-fn config_plain_format() {
-    sk().args(["config", "--format", "plain"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("provider"));
-}
-
-#[test]
-fn config_json_format() {
-    sk().args(["config", "--format", "json"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("["));
 }
 
 #[test]
