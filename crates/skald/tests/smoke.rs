@@ -107,8 +107,33 @@ fn aliases_source_exits_zero() {
 }
 
 #[test]
-fn doctor_stub_shows_message() {
-    sk().arg("doctor").assert().success().stderr(predicate::str::contains("Not yet implemented"));
+fn doctor_runs() {
+    // Doctor may exit 0 or 1 depending on environment, but should not panic
+    sk().arg("doctor").assert().code(predicate::in_iter([0, 1]));
+}
+
+#[test]
+fn doctor_json_format() {
+    let output = sk()
+        .args(["doctor", "--format", "json"])
+        .output()
+        .expect("failed to run sk doctor --format json");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value = serde_json::from_str(&stdout).expect("invalid JSON output");
+    assert!(parsed["checks"].is_array(), "expected 'checks' array in JSON output");
+    assert!(parsed["summary"].is_object(), "expected 'summary' object in JSON output");
+}
+
+#[test]
+fn doctor_fix_flag() {
+    let tmp = tempfile::tempdir().unwrap();
+    // Run with --fix in a temp config home so config_dir gets created
+    sk().args(["doctor", "--fix"])
+        .env("XDG_CONFIG_HOME", tmp.path())
+        .assert()
+        .code(predicate::in_iter([0, 1]));
+    assert!(tmp.path().join("skald").exists(), "expected config dir to be created by --fix");
 }
 
 #[test]
