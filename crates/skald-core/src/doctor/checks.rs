@@ -258,6 +258,7 @@ fn check_stale_logs(fix: bool) -> CheckResult {
 mod tests {
     use super::*;
     use crate::doctor::Category;
+    use serial_test::serial;
 
     #[test]
     fn environment_checks_have_correct_category() {
@@ -276,11 +277,9 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn config_checks_have_correct_category() {
-        // Use a temp dir so we don't interfere with real config
         let tmp = tempfile::tempdir().unwrap();
-        // SAFETY: test-only; tests using XDG_CONFIG_HOME run with --test-threads=1
-        // or use unique paths to avoid interference.
         unsafe { std::env::set_var("XDG_CONFIG_HOME", tmp.path()) };
         let results = config_checks(false);
         for r in &results {
@@ -295,10 +294,10 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn config_fix_creates_dir() {
         let tmp = tempfile::tempdir().unwrap();
         let config_home = tmp.path().join("unique_config_fix_test");
-        // SAFETY: test-only with unique path
         unsafe { std::env::set_var("XDG_CONFIG_HOME", &config_home) };
 
         let dir = config::config_dir();
@@ -312,9 +311,9 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn maintenance_checks_have_correct_category() {
         let tmp = tempfile::tempdir().unwrap();
-        // SAFETY: test-only with unique temp dir
         unsafe { std::env::set_var("XDG_CONFIG_HOME", tmp.path()) };
         let results = maintenance_checks(false);
         for r in &results {
