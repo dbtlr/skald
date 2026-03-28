@@ -1,9 +1,11 @@
 mod cli;
 mod ui;
 
+use std::io::IsTerminal;
+use std::process;
+
 use clap::Parser;
 use cli::{Cli, Command, ConfigAction};
-use std::process;
 
 fn main() {
     let raw_args: Vec<String> = std::env::args().collect();
@@ -46,7 +48,7 @@ fn main() {
     );
 
     let fmt = cli.effective_format();
-    let is_tty = atty::is(atty::Stream::Stdout);
+    let is_tty = std::io::stdout().is_terminal();
 
     let code = match cli.command {
         Command::Completions { shell } => {

@@ -31,7 +31,7 @@ pub fn load_file(path: &Path) -> Result<Option<RawConfig>> {
     match std::fs::read_to_string(path) {
         Ok(contents) => {
             let config: RawConfig =
-                serde_yaml::from_str(&contents).map_err(|e| SkaldError::ConfigParse {
+                serde_yaml_ng::from_str(&contents).map_err(|e| SkaldError::ConfigParse {
                     path: path.display().to_string(),
                     line: e.location().map(|l| l.line()).unwrap_or(0),
                     detail: e.to_string(),
