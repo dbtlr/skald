@@ -133,3 +133,54 @@ fn quiet_flag_accepted() {
 fn no_color_flag_accepted() {
     sk().args(["--no-color", "config"]).assert().success();
 }
+
+#[test]
+fn config_eject_creates_files() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["config", "eject"]).env("XDG_CONFIG_HOME", tmp.path()).assert().success();
+    assert!(tmp.path().join("skald/prompts/commit-title.md").exists());
+    assert!(tmp.path().join("skald/prompts/system.md").exists());
+}
+
+#[test]
+fn config_eject_single_template() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["config", "eject", "commit-title"])
+        .env("XDG_CONFIG_HOME", tmp.path())
+        .assert()
+        .success();
+    assert!(tmp.path().join("skald/prompts/commit-title.md").exists());
+    assert!(!tmp.path().join("skald/prompts/system.md").exists());
+}
+
+#[test]
+fn config_eject_project_flag() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["config", "eject", "--project"]).current_dir(tmp.path()).assert().success();
+    assert!(tmp.path().join(".tool/prompts/commit-title.md").exists());
+}
+
+#[test]
+fn commit_show_prompt_renders_template() {
+    sk().args(["commit", "--show-prompt"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("conventional commit format"));
+}
+
+#[test]
+fn pr_show_prompt_renders_template() {
+    sk().args(["pr", "--show-prompt"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("pull request title"));
+}
+
+#[test]
+fn config_eject_unknown_template_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["config", "eject", "nonexistent"])
+        .env("XDG_CONFIG_HOME", tmp.path())
+        .assert()
+        .failure();
+}
