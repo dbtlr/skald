@@ -26,7 +26,9 @@ pub struct CheckResult {
     pub name: String,
     pub status: CheckStatus,
     pub detail: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub suggestion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub was: Option<String>,
 }
 
