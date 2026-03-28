@@ -124,10 +124,7 @@ fn main() {
                 1
             }
         },
-        Command::Doctor => {
-            cliclack::log::warning("Not yet implemented — coming in M4.").ok();
-            0
-        }
+        Command::Doctor { fix } => cli::doctor::run_doctor(fix, fmt, is_tty),
     };
 
     process::exit(code);
