@@ -228,6 +228,14 @@ fn commit_help_shows_flags() {
 }
 
 #[test]
+fn commit_extended_flag_in_help() {
+    sk().args(["commit", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--extended"));
+}
+
+#[test]
 fn commit_no_staged_changes_errors() {
     let tmp = tempfile::tempdir().unwrap();
     // Create a git repo with an initial commit but no staged changes
