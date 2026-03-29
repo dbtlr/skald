@@ -12,6 +12,8 @@ pub enum CarouselResult {
     Accept(usize),
     /// User wants to edit the message at this index.
     Edit(usize),
+    /// User wants to extend the message at this index with a body.
+    Extend(usize),
     /// User wants the extended action menu for this index.
     Menu(usize),
     /// User aborted (Esc or Ctrl+C).
@@ -54,6 +56,10 @@ pub fn show_carousel(messages: &[String]) -> io::Result<CarouselResult> {
                     // Edit
                     (KeyCode::Char('e'), KeyModifiers::NONE) => {
                         return Ok(CarouselResult::Edit(current));
+                    }
+                    // Extend
+                    (KeyCode::Char('x'), KeyModifiers::NONE) => {
+                        return Ok(CarouselResult::Extend(current));
                     }
                     // Menu
                     (KeyCode::Char('?'), _) => {
@@ -115,10 +121,11 @@ fn render(
     write!(out, "{pipe}  {sep}\r\n")?;
     // Line 6: key hints
     let hints = format!(
-        "{}  {}  {}  {}",
+        "{}  {}  {}  {}  {}",
         dim.apply_to("\u{2190} \u{2192} cycle"),
         dim.apply_to("a accept"),
         dim.apply_to("e edit"),
+        dim.apply_to("x extend"),
         dim.apply_to("? more"),
     );
     write!(out, "{pipe}  {hints}\r\n")?;
@@ -135,7 +142,8 @@ mod tests {
     fn carousel_result_variants_exist() {
         let _ = CarouselResult::Accept(0);
         let _ = CarouselResult::Edit(1);
-        let _ = CarouselResult::Menu(2);
+        let _ = CarouselResult::Extend(2);
+        let _ = CarouselResult::Menu(3);
         let _ = CarouselResult::Abort;
     }
 }

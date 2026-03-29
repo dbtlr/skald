@@ -66,6 +66,7 @@ fn main() {
             context,
             context_file,
             dry_run,
+            extended,
         } => {
             let config = match config_result {
                 Ok(ref cfg) => cfg,
@@ -86,6 +87,7 @@ fn main() {
                     context,
                     context_file,
                     dry_run,
+                    extended,
                     format: fmt,
                     is_tty,
                 },

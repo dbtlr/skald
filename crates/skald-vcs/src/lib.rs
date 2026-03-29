@@ -39,6 +39,8 @@ pub trait VcsAdapter: Send + Sync {
     fn get_diff(&self, options: &DiffOptions) -> Result<DiffResult, VcsError>;
     fn commit(&self, message: &str) -> Result<String, VcsError>;
     fn commit_amend(&self, message: &str) -> Result<String, VcsError>;
+    fn commit_with_body(&self, title: &str, body: &str) -> Result<String, VcsError>;
+    fn commit_amend_with_body(&self, title: &str, body: &str) -> Result<String, VcsError>;
     fn get_current_branch(&self) -> Result<String, VcsError>;
     fn get_repo_root(&self) -> Result<std::path::PathBuf, VcsError>;
     fn has_staged_changes(&self) -> Result<bool, VcsError>;
