@@ -102,6 +102,14 @@ impl VcsAdapter for GitAdapter {
         self.run_git(&["commit", "--amend", "-m", message])
     }
 
+    fn commit_with_body(&self, title: &str, body: &str) -> Result<String, VcsError> {
+        self.run_git(&["commit", "-m", title, "-m", body])
+    }
+
+    fn commit_amend_with_body(&self, title: &str, body: &str) -> Result<String, VcsError> {
+        self.run_git(&["commit", "--amend", "-m", title, "-m", body])
+    }
+
     fn get_current_branch(&self) -> Result<String, VcsError> {
         self.run_git(&["branch", "--show-current"])
     }
