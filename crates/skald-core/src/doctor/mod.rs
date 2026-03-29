@@ -125,12 +125,12 @@ pub struct DoctorReport {
     pub summary: Summary,
 }
 
-pub fn run_checks(fix: bool) -> DoctorReport {
+pub fn run_checks(fix: bool, full: bool) -> DoctorReport {
     let mut results = Vec::new();
 
     results.extend(checks::environment_checks());
     results.extend(checks::config_checks(fix));
-    results.extend(checks::provider_checks());
+    results.extend(checks::provider_checks(full));
     results.extend(checks::maintenance_checks(fix));
 
     let summary = Summary::from_results(&results);
