@@ -212,3 +212,43 @@ fn config_eject_unknown_template_errors() {
         .assert()
         .failure();
 }
+
+#[test]
+fn commit_help_shows_flags() {
+    sk().args(["commit", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--auto"))
+        .stdout(predicate::str::contains("--message-only"))
+        .stdout(predicate::str::contains("--amend"))
+        .stdout(predicate::str::contains("--context"))
+        .stdout(predicate::str::contains("--dry-run"));
+}
+
+#[test]
+fn commit_no_staged_changes_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    // Create a git repo with an initial commit but no staged changes
+    std::process::Command::new("git").args(["init"]).current_dir(tmp.path()).output().unwrap();
+    std::process::Command::new("git")
+        .args(["config", "user.email", "test@test.com"])
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .args(["config", "user.name", "Test"])
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .args(["commit", "--allow-empty", "-m", "init"])
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+
+    sk().args(["commit", "--auto"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No staged changes"));
+}
