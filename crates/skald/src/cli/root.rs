@@ -80,6 +80,33 @@ pub enum Command {
         /// Render the prompt and print to stdout without calling AI
         #[arg(long)]
         show_prompt: bool,
+        /// Generate title + description and create PR immediately
+        #[arg(long)]
+        auto: bool,
+        /// Print title suggestions to stdout without creating PR
+        #[arg(long)]
+        title_only: bool,
+        /// Print full PR payload without creating
+        #[arg(long)]
+        dry_run: bool,
+        /// Create as draft PR
+        #[arg(long)]
+        draft: bool,
+        /// Push current branch to remote before creating PR
+        #[arg(long)]
+        push: bool,
+        /// Update existing PR (coming soon)
+        #[arg(long)]
+        update: bool,
+        /// Target branch
+        #[arg(long, short = 'b')]
+        base: Option<String>,
+        /// Number of title suggestions
+        #[arg(short = 'n', long = "num", default_value = "3")]
+        count: usize,
+        /// Provide context about the PR
+        #[arg(long, short = 'c')]
+        context: Option<String>,
     },
     /// View and manage configuration
     Config {

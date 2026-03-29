@@ -1,6 +1,7 @@
 pub mod aliases;
 pub mod commit;
 pub mod completions;
+pub mod pr;
 pub mod config;
 pub mod doctor;
 pub mod root;

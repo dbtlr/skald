@@ -1647,6 +1647,7 @@ dependencies = [
  "predicates",
  "serde_json",
  "skald-core",
+ "skald-platform",
  "skald-providers",
  "skald-vcs",
  "tar",
