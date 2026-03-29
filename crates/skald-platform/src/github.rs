@@ -46,6 +46,14 @@ impl PlatformAdapter for GitHubAdapter {
         "github"
     }
 
+    fn pr_label(&self) -> &str {
+        "PR"
+    }
+
+    fn pr_prefix(&self) -> &str {
+        "#"
+    }
+
     fn pr_exists(&self, branch: &str) -> Result<Option<PrInfo>, PlatformError> {
         self.check_available()?;
 

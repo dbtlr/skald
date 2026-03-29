@@ -219,12 +219,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         return render_dry_run(&contents, opts.format, opts.is_tty);
     }
 
-    // 12. auto: detect platform, check existing PR, create PR
-    if opts.auto {
-        return create_pr(&git, &contents[0], &target, opts.draft, opts.push, opts.is_tty);
-    }
-
-    // 13. Interactive mode (bare `sk pr`)
+    // 12. Detect platform (needed for auto and interactive modes)
     let remote_url = match git.get_remote_url() {
         Ok(url) => url,
         Err(e) => {
@@ -233,17 +228,23 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         }
     };
 
-    let platform = match detect_platform(&remote_url) {
+    let platform = match detect_platform(&remote_url, Some(config.platform.as_str())) {
         Some(p) => p,
         None => {
             cliclack::log::error(
-                "Could not detect platform from remote URL. Currently only GitHub is supported.",
+                "Could not detect platform from remote URL. Set `platform: github` or `platform: gitlab` in your config.",
             )
             .ok();
             return 1;
         }
     };
 
+    // 13. auto: check existing PR, create PR
+    if opts.auto {
+        return create_pr(platform.as_ref(), &git, &contents[0], &target, opts.draft, opts.push, opts.is_tty);
+    }
+
+    // 14. Interactive mode (bare `sk pr`)
     run_interactive_pr(
         &git,
         platform.as_ref(),
@@ -270,11 +271,11 @@ fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i3
         }
     };
 
-    let platform = match detect_platform(&remote_url) {
+    let platform = match detect_platform(&remote_url, Some(config.platform.as_str())) {
         Some(p) => p,
         None => {
             cliclack::log::error(
-                "Could not detect platform from remote URL. Currently only GitHub is supported.",
+                "Could not detect platform from remote URL. Set `platform: github` or `platform: gitlab` in your config.",
             )
             .ok();
             return 1;
@@ -525,6 +526,7 @@ fn run_confirmation_menu(
             Ok("create") => {
                 let content = PrContent { title: title.clone(), body: body.clone() };
                 return ConfirmationResult::Exit(create_pr(
+                    platform,
                     git,
                     &content,
                     target,
@@ -536,6 +538,7 @@ fn run_confirmation_menu(
             Ok("draft") => {
                 let content = PrContent { title: title.clone(), body: body.clone() };
                 return ConfirmationResult::Exit(create_pr(
+                    platform,
                     git,
                     &content,
                     target,
@@ -799,6 +802,7 @@ fn render_dry_run(contents: &[PrContent], format: OutputFormat, is_tty: bool) ->
 }
 
 fn create_pr(
+    platform: &dyn PlatformAdapter,
     git: &GitAdapter,
     content: &PrContent,
     target: &str,
@@ -806,26 +810,6 @@ fn create_pr(
     push: bool,
     is_tty: bool,
 ) -> i32 {
-    // Detect platform from remote URL
-    let remote_url = match git.get_remote_url() {
-        Ok(url) => url,
-        Err(e) => {
-            cliclack::log::error(format!("Failed to get remote URL: {e}")).ok();
-            return 1;
-        }
-    };
-
-    let platform = match detect_platform(&remote_url) {
-        Some(p) => p,
-        None => {
-            cliclack::log::error(
-                "Could not detect platform from remote URL. Currently only GitHub is supported.",
-            )
-            .ok();
-            return 1;
-        }
-    };
-
     let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
 
     // Check for existing PR
