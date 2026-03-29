@@ -141,7 +141,7 @@ fn main() {
                 1
             }
         },
-        Command::Doctor { fix } => cli::doctor::run_doctor(fix, fmt, is_tty),
+        Command::Doctor { fix, full } => cli::doctor::run_doctor(fix, full, fmt, is_tty),
     };
 
     process::exit(code);

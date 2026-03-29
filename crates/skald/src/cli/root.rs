@@ -93,6 +93,9 @@ pub enum Command {
         /// Auto-fix all fixable issues
         #[arg(long)]
         fix: bool,
+        /// Run extended checks including live provider connectivity
+        #[arg(long)]
+        full: bool,
     },
     /// Generate shell completions
     Completions {
