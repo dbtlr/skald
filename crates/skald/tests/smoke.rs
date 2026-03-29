@@ -250,5 +250,5 @@ fn commit_no_staged_changes_errors() {
         .current_dir(tmp.path())
         .assert()
         .failure()
-        .stderr(predicate::str::contains("No staged changes"));
+        .stderr(predicate::str::contains("No staged or unstaged changes"));
 }
