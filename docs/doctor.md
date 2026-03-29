@@ -40,6 +40,7 @@ sk doctor --format json # Output results as JSON
 |-------|------|------|---------|
 | `log_dir` | Log directory exists | Directory missing | Yes |
 | `stale_logs` | No stale log files | Files older than 14 days | Yes (prunes) |
+| `version` | Up to date | Update available (warn) | No |
 
 ## Check Statuses
 
