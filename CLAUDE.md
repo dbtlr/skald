@@ -2,6 +2,11 @@
 
 Skald (`sk`) is an AI-powered git workflow CLI written in Rust. It generates commit messages, PR titles, and PR descriptions.
 
+## How We Work
+
+- **Never push to main.** All work should be done in a brnach and pushed as a PR. No Exceptions.
+- **Discuss first, code second.** It is harder to undo a mistake than it is to discuss options first.
+
 ## Core Principles
 
 - **UX-first.** Every interaction should feel polished — including errors. Errors are suggestions, not complaints.
