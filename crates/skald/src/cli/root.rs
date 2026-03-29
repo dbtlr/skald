@@ -108,6 +108,39 @@ pub enum Command {
         #[arg(long, short = 'c')]
         context: Option<String>,
     },
+    /// Generate merge request title and description (alias for pr)
+    Mr {
+        /// Render the prompt and print to stdout without calling AI
+        #[arg(long)]
+        show_prompt: bool,
+        /// Generate title + description and create MR immediately
+        #[arg(long)]
+        auto: bool,
+        /// Print title suggestions to stdout without creating MR
+        #[arg(long)]
+        title_only: bool,
+        /// Print full MR payload without creating
+        #[arg(long)]
+        dry_run: bool,
+        /// Create as draft MR
+        #[arg(long)]
+        draft: bool,
+        /// Push current branch to remote before creating MR
+        #[arg(long)]
+        push: bool,
+        /// Update existing MR title and description
+        #[arg(long)]
+        update: bool,
+        /// Target branch
+        #[arg(long, short = 'b')]
+        base: Option<String>,
+        /// Number of title suggestions
+        #[arg(short = 'n', long = "num", default_value = "3")]
+        count: usize,
+        /// Provide context about the MR
+        #[arg(long, short = 'c')]
+        context: Option<String>,
+    },
     /// View and manage configuration
     Config {
         #[command(subcommand)]
