@@ -62,11 +62,17 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     // 4. Check for staged changes
     match git.has_staged_changes() {
         Ok(false) => {
-            cliclack::log::error(
-                "No staged changes found. Stage files first with `git add` or use `-a`/`-A`.",
-            )
-            .ok();
-            return 1;
+            if let Some(code) = handle_no_staged_changes(&git, opts.is_tty) {
+                return code;
+            }
+            // Verify staging actually produced changes
+            match git.has_staged_changes() {
+                Ok(true) => {}
+                _ => {
+                    cliclack::log::error("Still no staged changes after staging.").ok();
+                    return 1;
+                }
+            }
         }
         Err(e) => {
             cliclack::log::error(format!("Failed to check staged changes: {e}")).ok();
@@ -220,6 +226,63 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     }
 
     0
+}
+
+/// Handle the case where no changes are staged.
+///
+/// Returns `Some(exit_code)` if the commit flow should stop,
+/// or `None` if staging succeeded and the flow should continue.
+fn handle_no_staged_changes(git: &GitAdapter, is_tty: bool) -> Option<i32> {
+    // Check if there are unstaged changes we could offer to stage.
+    let has_unstaged = match git.has_unstaged_changes() {
+        Ok(v) => v,
+        Err(e) => {
+            cliclack::log::error(format!("Failed to check unstaged changes: {e}")).ok();
+            return Some(1);
+        }
+    };
+
+    if !has_unstaged {
+        cliclack::log::error("No staged or unstaged changes found.").ok();
+        return Some(1);
+    }
+
+    // Non-interactive: can't prompt, just tell the user what to do.
+    if !is_tty {
+        cliclack::log::error(
+            "No staged changes found. Use `-a` to stage tracked files or `-A` to stage all.",
+        )
+        .ok();
+        return Some(1);
+    }
+
+    // Interactive: offer to stage.
+    let selection = cliclack::select("No staged changes. How would you like to proceed?")
+        .item("all", "Stage all (-A)", "includes untracked files")
+        .item("tracked", "Stage tracked (-a)", "only already-tracked files")
+        .item("abort", "Abort", "")
+        .interact();
+
+    match selection {
+        Ok("all") => {
+            if let Err(e) = git.stage(StageMode::All) {
+                cliclack::log::error(format!("Failed to stage files: {e}")).ok();
+                return Some(1);
+            }
+            None
+        }
+        Ok("tracked") => {
+            if let Err(e) = git.stage(StageMode::Tracked) {
+                cliclack::log::error(format!("Failed to stage files: {e}")).ok();
+                return Some(1);
+            }
+            None
+        }
+        Ok(_) | Err(_) => {
+            // "abort" or cancelled
+            Some(130)
+        }
+    }
 }
 
 fn run_show_prompt(branch: &str, language: &str) -> i32 {
