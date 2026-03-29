@@ -31,6 +31,10 @@ pub struct Cli {
     /// Output format
     #[arg(long, value_enum, global = true)]
     pub format: Option<OutputFormat>,
+
+    /// Run as if started in <path>
+    #[arg(short = 'C', global = true, value_name = "PATH")]
+    pub directory: Option<std::path::PathBuf>,
 }
 
 #[derive(clap::Subcommand, Debug)]

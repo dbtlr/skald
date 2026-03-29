@@ -10,6 +10,15 @@ use cli::{Cli, Command, ConfigAction};
 fn main() {
     let raw_args: Vec<String> = std::env::args().collect();
 
+    // Pre-scan for -C <path> and chdir before config loading.
+    // Config discovery walks up from cwd, so this must happen first.
+    if let Some(dir) = prescan_directory(&raw_args)
+        && let Err(e) = std::env::set_current_dir(&dir)
+    {
+        eprintln!("error: cannot change to directory '{}': {e}", dir.display());
+        process::exit(1);
+    }
+
     // Load config early (before clap). Non-fatal — store Result.
     let config_result = skald_core::config::load_config();
 
@@ -145,4 +154,20 @@ fn main() {
     };
 
     process::exit(code);
+}
+
+/// Pre-scan raw args for `-C <path>` before clap parsing.
+/// Returns the path if found. This runs before config loading
+/// so that project config discovery uses the correct cwd.
+fn prescan_directory(args: &[String]) -> Option<std::path::PathBuf> {
+    let mut iter = args.iter().skip(1); // skip binary name
+    while let Some(arg) = iter.next() {
+        if arg == "-C" {
+            return iter.next().map(std::path::PathBuf::from);
+        }
+        if let Some(path) = arg.strip_prefix("-C") {
+            return Some(std::path::PathBuf::from(path));
+        }
+    }
+    None
 }
