@@ -241,7 +241,7 @@ fn check_claude_cli() -> CheckResult {
 
 pub fn maintenance_checks(fix: bool) -> Vec<CheckResult> {
     debug!(fix, "running maintenance checks");
-    vec![check_log_dir(fix), check_stale_logs(fix)]
+    vec![check_log_dir(fix), check_stale_logs(fix), check_version()]
 }
 
 fn check_log_dir(fix: bool) -> CheckResult {
@@ -318,6 +318,28 @@ fn check_stale_logs(fix: bool) -> CheckResult {
         CheckResult::warn("stale_logs", &format!("{stale} log file(s) older than 14 days"))
             .with_category(Category::Maintenance)
             .with_suggestion("Run `sk doctor --fix` to prune old logs")
+    }
+}
+
+fn check_version() -> CheckResult {
+    debug!("checking for version updates");
+    match crate::upgrade::check_latest_version() {
+        Some(info) if info.update_available => {
+            info!(current = %info.current, latest = %info.latest, "update available");
+            CheckResult::warn(
+                "version",
+                &format!("Update available: v{} → v{}", info.current, info.latest),
+            )
+            .with_category(Category::Maintenance)
+            .with_suggestion("Run `sk upgrade` to update")
+        }
+        Some(info) => CheckResult::pass("version", &format!("up to date (v{})", info.current))
+            .with_category(Category::Maintenance),
+        None => {
+            debug!("version check failed — network unavailable");
+            CheckResult::pass("version", "version check skipped (network unavailable)")
+                .with_category(Category::Maintenance)
+        }
     }
 }
 
