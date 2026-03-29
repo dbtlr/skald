@@ -205,7 +205,22 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     }
 
     // 16. Interactive mode (default — no --auto or --message-only)
-    run_interactive(&messages, &git, opts.amend, opts.dry_run)
+    let mut state = InteractiveState {
+        messages,
+        git: &git,
+        provider: &provider,
+        rt: &rt,
+        diff: &diff_result.diff,
+        diff_stat: &diff_result.stat,
+        branch: &branch,
+        context,
+        language: &config.language,
+        count,
+        amend: opts.amend,
+        dry_run: opts.dry_run,
+        is_tty: opts.is_tty,
+    };
+    run_interactive(&mut state)
 }
 
 /// Handle the case where no changes are staged.
@@ -326,11 +341,27 @@ fn extract_files_from_stat(stat: &str) -> String {
         .join(", ")
 }
 
-fn run_interactive(messages: &[String], git: &GitAdapter, amend: bool, dry_run: bool) -> i32 {
+struct InteractiveState<'a> {
+    messages: Vec<String>,
+    git: &'a GitAdapter,
+    provider: &'a ClaudeCliProvider,
+    rt: &'a tokio::runtime::Runtime,
+    diff: &'a str,
+    diff_stat: &'a str,
+    branch: &'a str,
+    context: Option<String>,
+    language: &'a str,
+    count: usize,
+    amend: bool,
+    dry_run: bool,
+    is_tty: bool,
+}
+
+fn run_interactive(state: &mut InteractiveState) -> i32 {
     use crate::ui::carousel::{CarouselResult, show_carousel};
 
     loop {
-        let result = match show_carousel(messages) {
+        let result = match show_carousel(&state.messages) {
             Ok(r) => r,
             Err(e) => {
                 cliclack::log::error(format!("Carousel error: {e}")).ok();
@@ -340,16 +371,15 @@ fn run_interactive(messages: &[String], git: &GitAdapter, amend: bool, dry_run: 
 
         match result {
             CarouselResult::Accept(idx) => {
-                return do_commit(git, &messages[idx], amend, dry_run);
+                return do_commit(state.git, &state.messages[idx], state.amend, state.dry_run);
             }
             CarouselResult::Edit(idx) => {
-                // Use cliclack input for inline editing
                 let edited: Result<String, _> = cliclack::input("Edit commit message:")
-                    .default_input(&messages[idx])
+                    .default_input(&state.messages[idx])
                     .interact();
                 match edited {
                     Ok(msg) if !msg.is_empty() => {
-                        return do_commit(git, &msg, amend, dry_run);
+                        return do_commit(state.git, &msg, state.amend, state.dry_run);
                     }
                     Ok(_) => {
                         cliclack::log::warning("Empty message — returning to carousel.").ok();
@@ -361,16 +391,41 @@ fn run_interactive(messages: &[String], git: &GitAdapter, amend: bool, dry_run: 
                     }
                 }
             }
+            CarouselResult::Extend(idx) => {
+                let code = handle_extend(state, idx);
+                if let Some(c) = code {
+                    return c;
+                }
+                // None means "back to carousel"
+                continue;
+            }
             CarouselResult::Menu(idx) => {
                 let choice = cliclack::select("What would you like to do?")
-                    .item("accept", "Accept", format!("commit: {}", &messages[idx]))
+                    .item("accept", "Accept", format!("commit: {}", &state.messages[idx]))
+                    .item("extend", "Extend", "generate extended description")
+                    .item("context", "Context", "add context and regenerate messages")
                     .item("amend", "Amend", "commit with --amend")
                     .item("abort", "Abort", "exit without committing")
                     .interact();
 
                 match choice {
-                    Ok("accept") => return do_commit(git, &messages[idx], false, dry_run),
-                    Ok("amend") => return do_commit(git, &messages[idx], true, dry_run),
+                    Ok("accept") => {
+                        return do_commit(state.git, &state.messages[idx], false, state.dry_run);
+                    }
+                    Ok("extend") => {
+                        let code = handle_extend(state, idx);
+                        if let Some(c) = code {
+                            return c;
+                        }
+                        continue;
+                    }
+                    Ok("context") => {
+                        handle_context_regeneration(state);
+                        continue;
+                    }
+                    Ok("amend") => {
+                        return do_commit(state.git, &state.messages[idx], true, state.dry_run);
+                    }
                     Ok("abort") | Err(_) => {
                         cliclack::log::info("Aborted.").ok();
                         return 130;
@@ -382,6 +437,156 @@ fn run_interactive(messages: &[String], git: &GitAdapter, amend: bool, dry_run: 
                 cliclack::log::info("Aborted.").ok();
                 return 130;
             }
+        }
+    }
+}
+
+/// Handle the extend flow: generate body, offer accept/edit/back.
+/// Returns `Some(exit_code)` to exit, or `None` to return to carousel.
+fn handle_extend(state: &InteractiveState, idx: usize) -> Option<i32> {
+    let title = &state.messages[idx];
+    let body = generate_body(
+        title,
+        state.diff_stat,
+        state.context.as_deref(),
+        state.language,
+        state.diff,
+        state.provider,
+        state.rt,
+        state.is_tty,
+    );
+
+    let body = match body {
+        Some(b) => b,
+        None => {
+            cliclack::log::warning("Failed to generate extended description.").ok();
+            return None;
+        }
+    };
+
+    cliclack::log::info(format!("Extended description:\n{body}")).ok();
+
+    let choice = cliclack::select("What would you like to do with this description?")
+        .item("accept", "Accept", "commit with title + body")
+        .item("edit", "Edit", "edit the body before committing")
+        .item("back", "Back", "return to carousel")
+        .interact();
+
+    match choice {
+        Ok("accept") => {
+            Some(do_commit_with_body(state.git, title, &body, state.amend, state.dry_run))
+        }
+        Ok("edit") => {
+            let edited: Result<String, _> =
+                cliclack::input("Edit description:").default_input(&body).interact();
+            match edited {
+                Ok(edited_body) if !edited_body.is_empty() => Some(do_commit_with_body(
+                    state.git,
+                    title,
+                    &edited_body,
+                    state.amend,
+                    state.dry_run,
+                )),
+                Ok(_) => {
+                    cliclack::log::warning("Empty body — returning to carousel.").ok();
+                    None
+                }
+                Err(_) => {
+                    cliclack::log::info("Aborted.").ok();
+                    Some(130)
+                }
+            }
+        }
+        Ok("back") | Err(_) => None,
+        _ => None,
+    }
+}
+
+/// Handle context regeneration: prompt for context, regenerate messages.
+fn handle_context_regeneration(state: &mut InteractiveState) {
+    let input: Result<String, _> = cliclack::input("Add context for regeneration:")
+        .placeholder("e.g. this is a bugfix for the login flow")
+        .interact();
+
+    let new_context = match input {
+        Ok(ctx) if !ctx.is_empty() => ctx,
+        Ok(_) => {
+            cliclack::log::warning("No context provided — keeping current messages.").ok();
+            return;
+        }
+        Err(_) => {
+            cliclack::log::info("Cancelled.").ok();
+            return;
+        }
+    };
+
+    // Update context — append to existing or set new
+    state.context = Some(match &state.context {
+        Some(existing) => format!("{existing}\n{new_context}"),
+        None => new_context,
+    });
+
+    if let Some(new_messages) = regenerate_messages(state) {
+        state.messages = new_messages;
+        cliclack::log::success("Messages regenerated with new context.").ok();
+    } else {
+        cliclack::log::warning("Regeneration failed — keeping current messages.").ok();
+    }
+}
+
+/// Regenerate commit messages using the current state (including updated context).
+fn regenerate_messages(state: &InteractiveState) -> Option<Vec<String>> {
+    let files_changed = extract_files_from_stat(state.diff_stat);
+    let prompt_ctx = PromptContext::new()
+        .set("branch", state.branch)
+        .set("diff_stat", state.diff_stat)
+        .set("context", state.context.as_deref().unwrap_or(""))
+        .set("language", state.language)
+        .set("num_suggestions", &state.count.to_string())
+        .set("files_changed", &files_changed);
+
+    let template = resolve_template("commit-title", None, None).ok()?;
+    let rendered_prompt = render_prompt(&template, &prompt_ctx).ok()?;
+
+    let system_template = resolve_template("system", None, None).unwrap_or_default();
+    let system_msg = render_prompt(&system_template, &prompt_ctx).unwrap_or(system_template);
+    let full_prompt = format!("{system_msg}\n\n{rendered_prompt}");
+
+    let commit_ctx = CommitContext {
+        diff: state.diff.to_string(),
+        stat: state.diff_stat.to_string(),
+        rendered_prompt: full_prompt,
+        extra_context: state.context.clone(),
+    };
+
+    let sp = if state.is_tty {
+        let s = cliclack::spinner();
+        s.start("Regenerating commit messages...");
+        Some(s)
+    } else {
+        None
+    };
+
+    match state.rt.block_on(state.provider.generate_commit_messages(&commit_ctx, state.count)) {
+        Ok(msgs) if !msgs.is_empty() => {
+            if let Some(s) = sp {
+                s.stop("Done");
+            }
+            Some(msgs)
+        }
+        Ok(_) => {
+            if let Some(s) = sp {
+                s.stop("Failed");
+            }
+            cliclack::log::warning("No messages returned.").ok();
+            None
+        }
+        Err(e) => {
+            if let Some(s) = sp {
+                s.stop("Failed");
+            }
+            cliclack::log::warning(format!("Regeneration failed: {e}")).ok();
+            None
         }
     }
 }
