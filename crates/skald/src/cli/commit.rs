@@ -119,8 +119,7 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
 
     // 10. Prepend system message
     let system_template = resolve_template("system", None, None).unwrap_or_default();
-    let system_msg =
-        render_prompt(&system_template, &prompt_ctx).unwrap_or(system_template);
+    let system_msg = render_prompt(&system_template, &prompt_ctx).unwrap_or(system_template);
     let full_prompt = format!("{system_msg}\n\n{rendered_prompt}");
 
     // 11. Build CommitContext
