@@ -64,12 +64,13 @@ fn pr_help_shows_flags() {
 }
 
 #[test]
-fn pr_update_shows_coming_soon() {
-    sk().args(["pr", "--update"]).assert().success().stderr(
-        predicate::str::contains("not yet implemented")
-            .or(predicate::str::contains("Not yet implemented"))
-            .or(predicate::str::contains("coming")),
-    );
+fn pr_update_not_in_repo_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["pr", "--update"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Not in a git repository"));
 }
 
 #[test]
