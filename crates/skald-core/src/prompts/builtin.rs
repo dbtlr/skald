@@ -67,70 +67,46 @@ Developer context:
 IMPORTANT: Write in {{ language }}.
 {% endif %}"###;
 
-pub const PR_TITLE: &str = r###"{# PR Title Prompt — generates pull request title suggestions #}
-You are writing a pull request title that summarizes an entire branch of work.
-
-This branch ({{ branch }}) is being merged into {{ target_branch }}.
-
-Analyze the full changeset — both the diff and the commit history — and
-generate exactly {{ num_suggestions }} pull request titles.
-
-Rules:
-- Each title should summarize the overall PURPOSE of the branch, not individual commits
-- Use a clear, descriptive format (e.g., "Add OAuth2 token refresh and session management")
-- Keep titles under 72 characters
-- Titles should make sense to a reviewer seeing the PR in a list
-- Do NOT use conventional commit format (no "feat:" prefix) unless the project convention requires it
-- Output one title per line, no numbering, no extra text
-
-{% if context %}
-Context from the developer:
-{{ context }}
-{% endif %}
-
-<commits>
-{{ commit_log }}
-</commits>
-
-<diffstat>
-{{ diff_stat }}
-</diffstat>
-
-{% if language != "English" %}
-IMPORTANT: Write all titles in {{ language }}.
-{% endif %}"###;
-
-pub const PR_DESCRIPTION: &str = r###"{# PR Description Prompt — generates a structured PR body #}
-You are writing a pull request description for a code review.
+pub const PR: &str = r###"{# PR Prompt — generates a pull request title and structured description #}
+You are writing a pull request for a code review.
 
 Branch {{ branch }} is being merged into {{ target_branch }}.
 
-Generate a clear, well-structured PR description. Use the following format:
+Analyze the full changeset — both the diff and the commit history — and generate
+a pull request with a title and structured description.
+
+{% if num_suggestions != "1" %}
+Generate exactly {{ num_suggestions }} alternatives. For each alternative, output
+the title on its own line, then the description body, separated by a blank line.
+Separate each alternative with a line containing only "---".
+{% endif %}
+
+Title rules:
+- Summarize the overall PURPOSE of the branch, not individual commits
+- Clear, descriptive format (e.g., "Add OAuth2 token refresh and session management")
+- Under 72 characters
+- Do NOT use conventional commit format (no "feat:" prefix)
+
+Description format — use these exact section headers:
 
 ## What
-A 2-3 sentence summary of what this PR does. Focus on the user-facing or
-system-level outcome, not implementation details.
+A 2-3 sentence summary of what this PR does.
 
 ## Why
-Brief explanation of the motivation. What problem does this solve?
-What requirement does it address?
+Brief explanation of the motivation.
 
 ## Key Changes
-A bullet list of the most important changes (3-7 items). Group related
-changes together. Focus on the meaningful changes, not every file touched.
-Each bullet should be 1-2 sentences.
+A bullet list of the most important changes (3-7 items).
 
 ## Testing
-Brief note on how this was tested, or what testing is recommended for
-reviewers. If no tests were added, say so and explain why.
+Brief note on how this was tested or what testing is recommended.
 
 ---
 
 Formatting rules:
-- Use the section headers exactly as shown above (## What, ## Why, etc.)
 - Keep the total description under 40 lines
-- Be specific — avoid vague phrases like "various improvements" or "code cleanup"
-- Do NOT list every file changed — the reviewer can see the file list themselves
+- Be specific — avoid vague phrases like "various improvements"
+- Do NOT list every file changed
 - Do NOT include the PR title in the description body
 - If there are breaking changes, add a "## Breaking Changes" section after Key Changes
 
@@ -172,7 +148,7 @@ pub const EJECT_HEADER: &str = r###"{# =========================================
 
 /// Returns all valid template names.
 pub fn all_template_names() -> Vec<&'static str> {
-    vec!["system", "commit-title", "commit-body", "pr-title", "pr-description"]
+    vec!["system", "commit-title", "commit-body", "pr"]
 }
 
 /// Returns the built-in template content for a given name.
@@ -181,8 +157,7 @@ pub fn get_builtin(name: &str) -> Option<&'static str> {
         "system" => Some(SYSTEM),
         "commit-title" => Some(COMMIT_TITLE),
         "commit-body" => Some(COMMIT_BODY),
-        "pr-title" => Some(PR_TITLE),
-        "pr-description" => Some(PR_DESCRIPTION),
+        "pr" => Some(PR),
         _ => None,
     }
 }
@@ -209,9 +184,8 @@ mod tests {
         assert!(names.contains(&"system"));
         assert!(names.contains(&"commit-title"));
         assert!(names.contains(&"commit-body"));
-        assert!(names.contains(&"pr-title"));
-        assert!(names.contains(&"pr-description"));
-        assert_eq!(names.len(), 5);
+        assert!(names.contains(&"pr"));
+        assert_eq!(names.len(), 4);
     }
 
     #[test]
@@ -226,14 +200,14 @@ mod tests {
         let commit_body = get_builtin("commit-body").unwrap();
         assert!(commit_body.contains("title"));
 
-        let pr_title = get_builtin("pr-title").unwrap();
-        assert!(pr_title.contains("branch"));
-        assert!(pr_title.contains("target_branch"));
+        let pr = get_builtin("pr").unwrap();
+        assert!(pr.contains("branch"));
+        assert!(pr.contains("target_branch"));
+        assert!(pr.contains("## What"));
+        assert!(pr.contains("## Why"));
 
-        let pr_desc = get_builtin("pr-description").unwrap();
-        assert!(pr_desc.contains("## What"));
-        assert!(pr_desc.contains("## Why"));
-
+        assert!(get_builtin("pr-title").is_none());
+        assert!(get_builtin("pr-description").is_none());
         assert!(get_builtin("nonexistent").is_none());
     }
 

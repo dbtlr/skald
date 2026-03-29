@@ -34,21 +34,15 @@ impl Default for PromptContext {
 
 pub fn mock_prompt_context() -> PromptContext {
     PromptContext::new()
-        .set("branch", "feature/example-branch")
-        .set(
-            "diff_stat",
-            " src/main.rs | 10 +++++-----\n 2 files changed, 5 insertions(+), 5 deletions(-)",
-        )
+        .set("branch", "feature/add-oauth")
+        .set("target_branch", "main")
+        .set("diff_stat", " src/auth.rs | 45 +++++++++++++++++\n src/config.rs | 12 +++--\n 2 files changed, 50 insertions(+), 7 deletions(-)")
         .set("context", "")
         .set("language", "English")
         .set("num_suggestions", "3")
-        .set("files_changed", "src/main.rs, src/lib.rs")
-        .set("title", "feat(auth): add token refresh")
-        .set("target_branch", "main")
-        .set(
-            "commit_log",
-            "a1b2c3d feat(auth): add token refresh\nb2c3d4e fix(auth): handle expired tokens",
-        )
+        .set("files_changed", "src/auth.rs, src/config.rs")
+        .set("title", "feat(auth): add OAuth2 token refresh")
+        .set("commit_log", "abc1234 feat(auth): add OAuth2 token refresh\ndef5678 fix(config): handle missing redirect URL")
 }
 
 pub fn render_prompt(template: &str, ctx: &PromptContext) -> Result<String> {
@@ -68,7 +62,7 @@ mod tests {
     fn renders_simple_variables() {
         let ctx = mock_prompt_context();
         let result = render_prompt("Branch: {{ branch }}", &ctx).unwrap();
-        assert_eq!(result, "Branch: feature/example-branch");
+        assert_eq!(result, "Branch: feature/add-oauth");
     }
 
     #[test]
@@ -100,7 +94,7 @@ mod tests {
         let ctx = mock_prompt_context();
         let result = render_prompt(builtin::COMMIT_TITLE, &ctx).unwrap();
         assert!(result.contains("3 commit messages"), "should contain num_suggestions");
-        assert!(result.contains("src/main.rs | 10"), "should contain diff_stat content");
+        assert!(result.contains("src/auth.rs | 45"), "should contain diff_stat content");
     }
 
     #[test]

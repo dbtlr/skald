@@ -15,6 +15,7 @@ pub struct PrContext {
     pub diff: String,
     pub commit_log: String,
     pub target_branch: String,
+    pub rendered_prompt: String,
     pub extra_context: Option<String>,
 }
 
@@ -46,5 +47,9 @@ pub trait Provider: Send + Sync {
         count: usize,
     ) -> Result<Vec<String>, ProviderError>;
 
-    async fn generate_pr_content(&self, ctx: &PrContext) -> Result<Vec<PrContent>, ProviderError>;
+    async fn generate_pr_content(
+        &self,
+        ctx: &PrContext,
+        count: usize,
+    ) -> Result<Vec<PrContent>, ProviderError>;
 }

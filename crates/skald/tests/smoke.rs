@@ -49,8 +49,58 @@ fn commit_bare_not_in_repo_errors() {
 }
 
 #[test]
-fn pr_stub_shows_message() {
-    sk().arg("pr").assert().success().stderr(predicate::str::contains("Not yet implemented"));
+fn pr_help_shows_flags() {
+    sk().args(["pr", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--auto"))
+        .stdout(predicate::str::contains("--title-only"))
+        .stdout(predicate::str::contains("--dry-run"))
+        .stdout(predicate::str::contains("--draft"))
+        .stdout(predicate::str::contains("--push"))
+        .stdout(predicate::str::contains("--update"))
+        .stdout(predicate::str::contains("--base"))
+        .stdout(predicate::str::contains("--context"));
+}
+
+#[test]
+fn pr_update_shows_coming_soon() {
+    sk().args(["pr", "--update"]).assert().success().stderr(
+        predicate::str::contains("not yet implemented")
+            .or(predicate::str::contains("Not yet implemented"))
+            .or(predicate::str::contains("coming")),
+    );
+}
+
+#[test]
+fn pr_not_in_repo_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["pr", "--auto"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Not in a git repository"));
+}
+
+#[test]
+fn pr_no_commits_ahead_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    let run = |args: &[&str]| {
+        std::process::Command::new("git").args(args).current_dir(tmp.path()).output().unwrap()
+    };
+
+    run(&["init"]);
+    run(&["config", "user.email", "test@test.com"]);
+    run(&["config", "user.name", "Test"]);
+    std::fs::write(tmp.path().join("file.txt"), "initial").unwrap();
+    run(&["add", "."]);
+    run(&["commit", "-m", "init"]);
+
+    sk().args(["pr", "--auto", "--base", "HEAD"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No commits found"));
 }
 
 #[test]
@@ -208,7 +258,7 @@ fn pr_show_prompt_renders_template() {
     sk().args(["pr", "--show-prompt"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("pull request title"));
+        .stdout(predicate::str::contains("pull request"));
 }
 
 #[test]

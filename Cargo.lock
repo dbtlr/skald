@@ -1647,6 +1647,7 @@ dependencies = [
  "predicates",
  "serde_json",
  "skald-core",
+ "skald-platform",
  "skald-providers",
  "skald-vcs",
  "tar",
@@ -1676,6 +1677,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "skald-platform"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
 name = "skald-providers"
 version = "0.1.0"
 dependencies = [
@@ -1690,6 +1701,7 @@ dependencies = [
 name = "skald-vcs"
 version = "0.1.0"
 dependencies = [
+ "tempfile",
  "thiserror 2.0.18",
 ]
 

@@ -103,29 +103,42 @@ fn main() {
                 config,
             )
         }
-        Command::Pr { show_prompt } => {
-            if show_prompt {
-                let ctx = skald_core::prompts::mock_prompt_context();
-                match skald_core::prompts::resolve_template("pr-title", None, None) {
-                    Ok(template) => match skald_core::prompts::render_prompt(&template, &ctx) {
-                        Ok(rendered) => {
-                            print!("{rendered}");
-                            0
-                        }
-                        Err(e) => {
-                            cliclack::log::error(e.to_string()).ok();
-                            1
-                        }
-                    },
-                    Err(e) => {
-                        cliclack::log::error(e.to_string()).ok();
-                        1
-                    }
+        Command::Pr {
+            show_prompt,
+            auto,
+            title_only,
+            dry_run,
+            draft,
+            push,
+            update,
+            base,
+            count,
+            context,
+        } => {
+            let config = match config_result {
+                Ok(ref cfg) => cfg,
+                Err(ref e) => {
+                    cliclack::log::error(format!("Failed to load config: {e}")).ok();
+                    process::exit(1);
                 }
-            } else {
-                cliclack::log::warning("Not yet implemented — coming in M8.").ok();
-                0
-            }
+            };
+            cli::pr::run_pr(
+                cli::pr::PrOptions {
+                    show_prompt,
+                    auto,
+                    title_only,
+                    dry_run,
+                    draft,
+                    push,
+                    update,
+                    base,
+                    count,
+                    context,
+                    format: fmt,
+                    is_tty,
+                },
+                config,
+            )
         }
         Command::Config { action } => {
             let action = action.unwrap_or(ConfigAction::Show);

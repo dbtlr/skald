@@ -3,6 +3,7 @@ pub mod commit;
 pub mod completions;
 pub mod config;
 pub mod doctor;
+pub mod pr;
 pub mod root;
 pub mod upgrade;
 
