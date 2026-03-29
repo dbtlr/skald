@@ -22,7 +22,7 @@ fn check_command_available(cmd: &str, version_flag: &str) -> Option<String> {
 
 pub fn environment_checks() -> Vec<CheckResult> {
     debug!("running environment checks");
-    vec![check_git(), check_git_repo(), check_gh()]
+    vec![check_git(), check_git_repo(), check_gh(), check_glab()]
 }
 
 fn check_git() -> CheckResult {
@@ -59,6 +59,17 @@ fn check_gh() -> CheckResult {
         None => CheckResult::warn("gh", "GitHub CLI is not installed")
             .with_category(Category::Environment)
             .with_suggestion("Install gh: https://cli.github.com/"),
+    }
+}
+
+fn check_glab() -> CheckResult {
+    match Command::new("glab").arg("--version").output() {
+        Ok(output) if output.status.success() => {
+            CheckResult::pass("glab", "glab CLI available").with_category(Category::Environment)
+        }
+        _ => CheckResult::pass("glab", "glab CLI not found (optional — needed for GitLab)")
+            .with_category(Category::Environment)
+            .with_suggestion("Install from https://gitlab.com/gitlab-org/cli for GitLab support"),
     }
 }
 
@@ -217,6 +228,25 @@ pub fn provider_checks(full: bool) -> Vec<CheckResult> {
                     .with_category(Category::Provider)
                     .with_suggestion("Install: npm install -g @anthropic-ai/claude-code"),
                 );
+            }
+        }
+
+        if Command::new("glab").arg("--version").output().map(|o| o.status.success()).unwrap_or(false) {
+            let auth_result = Command::new("glab").args(["auth", "status"]).output();
+            match auth_result {
+                Ok(output) if output.status.success() => {
+                    results.push(
+                        CheckResult::pass("glab_auth", "GitLab CLI authenticated")
+                            .with_category(Category::Provider),
+                    );
+                }
+                _ => {
+                    results.push(
+                        CheckResult::warn("glab_auth", "GitLab CLI not authenticated")
+                            .with_category(Category::Provider)
+                            .with_suggestion("Run `glab auth login` to authenticate"),
+                    );
+                }
             }
         }
     }
