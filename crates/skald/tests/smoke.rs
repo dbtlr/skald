@@ -39,11 +39,13 @@ fn completions_fish_outputs_script() {
 }
 
 #[test]
-fn commit_bare_shows_interactive_not_implemented() {
+fn commit_bare_not_in_repo_errors() {
+    let tmp = tempfile::tempdir().unwrap();
     sk().arg("commit")
+        .current_dir(tmp.path())
         .assert()
-        .success()
-        .stdout(predicate::str::contains("Interactive mode not yet implemented"));
+        .failure()
+        .stderr(predicate::str::contains("Not in a git repository"));
 }
 
 #[test]
