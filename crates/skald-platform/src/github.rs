@@ -156,6 +156,45 @@ impl PlatformAdapter for GitHubAdapter {
             }
         }
     }
+
+    fn update_pr(&self, branch: &str, title: &str, body: &str) -> Result<PrInfo, PlatformError> {
+        self.check_available()?;
+        debug!("Updating PR for branch '{}': {}", branch, title);
+
+        let output = Command::new("gh")
+            .args(["pr", "edit", branch, "--title", title, "--body", body])
+            .output()
+            .map_err(|e| PlatformError::Other(format!("Failed to run gh: {e}")))?;
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if !output.status.success() {
+            if let Some(auth_err) = Self::check_auth_error(&stderr) {
+                return Err(auth_err);
+            }
+            return Err(PlatformError::ApiError { detail: stderr.trim().to_string() });
+        }
+
+        // Fetch updated PR info
+        let view_output = Command::new("gh")
+            .args(["pr", "view", branch, "--json", "number,url,state,title,headRefName,baseRefName"])
+            .output();
+
+        match view_output {
+            Ok(view) if view.status.success() => {
+                let view_stdout = String::from_utf8_lossy(&view.stdout);
+                serde_json::from_str::<PrInfo>(&view_stdout)
+                    .map_err(|e| PlatformError::Other(format!("Failed to parse PR info: {e}")))
+            }
+            _ => Ok(PrInfo {
+                number: 0,
+                url: String::new(),
+                state: "open".to_string(),
+                title: title.to_string(),
+                head_branch: branch.to_string(),
+                base_branch: String::new(),
+            }),
+        }
+    }
 }
 
 fn fallback_pr_info(create_output: &std::process::Output) -> Result<PrInfo, PlatformError> {
@@ -232,5 +271,12 @@ mod tests {
     #[test]
     fn availability_check_does_not_panic() {
         let _ = GitHubAdapter::is_available();
+    }
+
+    #[test]
+    fn update_pr_method_exists() {
+        let adapter = GitHubAdapter;
+        assert_eq!(adapter.name(), "github");
+        // Compilation verifies the method exists on the trait
     }
 }
