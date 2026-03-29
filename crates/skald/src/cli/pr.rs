@@ -51,7 +51,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
 
     // 6. Get branch diff and commit log
     let diff_result = match git
-        .get_branch_diff(&target, &DiffOptions { staged: false, exclude_patterns: vec![] })
+        .get_branch_diff(&target, "HEAD", &DiffOptions { staged: false, exclude_patterns: vec![] })
     {
         Ok(d) => d,
         Err(e) => {
@@ -60,7 +60,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         }
     };
 
-    let commit_log = match git.get_commit_log(&target) {
+    let commit_log = match git.get_commit_log(&target, "HEAD") {
         Ok(log) => log,
         Err(e) => {
             cliclack::log::error(format!("Failed to get commit log: {e}")).ok();

@@ -99,8 +99,8 @@ impl VcsAdapter for GitAdapter {
         Ok(DiffResult { diff, stat, files_changed, insertions, deletions })
     }
 
-    fn get_branch_diff(&self, target: &str, options: &DiffOptions) -> Result<DiffResult, VcsError> {
-        let range = format!("{target}...HEAD");
+    fn get_branch_diff(&self, target: &str, source: &str, options: &DiffOptions) -> Result<DiffResult, VcsError> {
+        let range = format!("{target}...{source}");
         let raw_diff = self.run_git(&["diff", &range])?;
         let diff = filter_diff(&raw_diff, &options.exclude_patterns, true);
 
@@ -110,9 +110,13 @@ impl VcsAdapter for GitAdapter {
         Ok(DiffResult { diff, stat, files_changed, insertions, deletions })
     }
 
-    fn get_commit_log(&self, target: &str) -> Result<String, VcsError> {
-        let range = format!("{target}..HEAD");
+    fn get_commit_log(&self, target: &str, source: &str) -> Result<String, VcsError> {
+        let range = format!("{target}..{source}");
         self.run_git(&["log", &range, "--oneline"])
+    }
+
+    fn get_upstream_ref(&self) -> Result<String, VcsError> {
+        self.run_git(&["rev-parse", "--abbrev-ref", "@{u}"])
     }
 
     fn has_unpushed_commits(&self) -> Result<bool, VcsError> {
@@ -180,6 +184,11 @@ impl VcsAdapter for GitAdapter {
         self.run_git(&["add", flag])?;
         Ok(())
     }
+
+    fn push(&self) -> Result<(), VcsError> {
+        self.run_git(&["push"])?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -227,7 +236,7 @@ mod tests {
         Cmd::new("git").args(["add", "."]).current_dir(path).status().unwrap();
         Cmd::new("git").args(["commit", "-m", "add feature"]).current_dir(path).status().unwrap();
 
-        let log = adapter.get_commit_log("main").unwrap();
+        let log = adapter.get_commit_log("main", "HEAD").unwrap();
         assert!(log.contains("add feature"), "log should contain feature commit: {log}");
         assert!(!log.contains("initial commit"), "log should not contain base commit: {log}");
     }
@@ -244,7 +253,7 @@ mod tests {
         Cmd::new("git").args(["commit", "-m", "add new.rs"]).current_dir(path).status().unwrap();
 
         let options = DiffOptions { staged: false, exclude_patterns: vec![] };
-        let result = adapter.get_branch_diff("main", &options).unwrap();
+        let result = adapter.get_branch_diff("main", "HEAD", &options).unwrap();
         assert!(result.diff.contains("new.rs"), "diff should contain new.rs: {}", result.diff);
         assert_eq!(result.files_changed, 1);
         assert!(result.insertions > 0);
@@ -267,7 +276,7 @@ mod tests {
             .unwrap();
 
         let options = DiffOptions { staged: false, exclude_patterns: vec![] };
-        let result = adapter.get_branch_diff("main", &options).unwrap();
+        let result = adapter.get_branch_diff("main", "HEAD", &options).unwrap();
         assert!(!result.diff.contains("Cargo.lock"), "lock file should be filtered");
         assert!(result.diff.contains("src.rs"), "src.rs should be in diff");
     }
@@ -337,5 +346,12 @@ mod tests {
         // We're running inside the skald repo, so this should succeed
         let adapter = GitAdapter::detect();
         assert!(adapter.is_ok());
+    }
+
+    #[test]
+    fn get_upstream_ref_no_upstream_errors() {
+        let (_dir, adapter) = make_repo();
+        let result = adapter.get_upstream_ref();
+        assert!(result.is_err());
     }
 }
