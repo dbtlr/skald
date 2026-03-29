@@ -122,6 +122,36 @@ fn pr_not_in_repo_errors() {
 }
 
 #[test]
+fn mr_help_shows_flags() {
+    sk().args(["mr", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--auto"))
+        .stdout(predicate::str::contains("--title-only"))
+        .stdout(predicate::str::contains("--dry-run"))
+        .stdout(predicate::str::contains("--draft"))
+        .stdout(predicate::str::contains("--push"))
+        .stdout(predicate::str::contains("--update"))
+        .stdout(predicate::str::contains("--base"))
+        .stdout(predicate::str::contains("--context"));
+}
+
+#[test]
+fn mr_not_in_repo_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    let output = sk().args(["mr", "--auto"]).current_dir(tmp.path()).output().unwrap();
+
+    assert!(!output.status.success(), "expected failure");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("Not in a git repository")
+            // sandbox/CI: tracing-appender cannot write log files
+            || stderr.contains("initializing rolling file appender failed"),
+        "Unexpected stderr: {stderr}"
+    );
+}
+
+#[test]
 fn pr_no_commits_ahead_errors() {
     let tmp = tempfile::tempdir().unwrap();
     let run = |args: &[&str]| {

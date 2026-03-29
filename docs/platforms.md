@@ -42,7 +42,44 @@ No manual platform configuration is needed for GitHub.
 
 ## GitLab
 
-GitLab support is planned for a future release (M10).
+### Requirements
+
+- [GitLab CLI (`glab`)](https://gitlab.com/gitlab-org/cli) installed and on your PATH
+- Authenticated via `glab auth login`
+
+### Setup
+
+```sh
+# Install glab
+brew install glab       # macOS
+sudo apt install glab   # Debian/Ubuntu
+
+# Authenticate
+glab auth login
+```
+
+### Platform Detection
+
+Skald detects GitLab automatically from your git remote URL:
+
+- `https://gitlab.com/user/repo.git`
+- `git@gitlab.com:user/repo.git`
+- Self-hosted instances with `gitlab` in the hostname (e.g., `gitlab.company.com`)
+
+For self-hosted instances without `gitlab` in the hostname, set the platform explicitly in config.
+
+## Self-Hosted / Enterprise
+
+For GitHub Enterprise or GitLab instances with custom domains, set the platform in your config:
+
+```yaml
+# ~/.config/skald/config.yaml or .skaldrc.yaml
+platform: github   # Force GitHub platform
+# or
+platform: gitlab   # Force GitLab platform
+```
+
+When `platform` is set to a specific value, URL detection is skipped.
 
 ## Configuration
 
