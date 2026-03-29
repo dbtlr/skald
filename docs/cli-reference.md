@@ -6,6 +6,7 @@
 |---------|--------|-------------|
 | `sk commit` | Stub (M1) | Generate commit messages and commit |
 | `sk pr` | Working | Generate PR title/description and create PR |
+| `sk mr` | Working | Generate MR title/description (alias for pr) |
 | `sk config` | Partial | View and manage configuration |
 | `sk aliases` | Stub (M1) | List active aliases and their sources |
 | `sk doctor` | Stub (M3) | Validate environment, config, and provider connectivity |

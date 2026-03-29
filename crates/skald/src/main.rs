@@ -140,6 +140,43 @@ fn main() {
                 config,
             )
         }
+        Command::Mr {
+            show_prompt,
+            auto,
+            title_only,
+            dry_run,
+            draft,
+            push,
+            update,
+            base,
+            count,
+            context,
+        } => {
+            let config = match config_result {
+                Ok(ref cfg) => cfg,
+                Err(ref e) => {
+                    cliclack::log::error(format!("Failed to load config: {e}")).ok();
+                    process::exit(1);
+                }
+            };
+            cli::pr::run_pr(
+                cli::pr::PrOptions {
+                    show_prompt,
+                    auto,
+                    title_only,
+                    dry_run,
+                    draft,
+                    push,
+                    update,
+                    base,
+                    count,
+                    context,
+                    format: fmt,
+                    is_tty,
+                },
+                config,
+            )
+        }
         Command::Config { action } => {
             let action = action.unwrap_or(ConfigAction::Show);
             match action {

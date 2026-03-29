@@ -87,7 +87,7 @@ fn generate_pr_contents(
 
     let sp = if is_tty {
         let s = cliclack::spinner();
-        s.start("Generating PR content...");
+        s.start("Generating content...");
         Some(s)
     } else {
         None
@@ -121,7 +121,7 @@ fn generate_pr_contents(
     };
 
     if contents.is_empty() {
-        cliclack::log::error("No PR content generated.").ok();
+        cliclack::log::error("No content generated.").ok();
         return Err(1);
     }
 
@@ -219,12 +219,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         return render_dry_run(&contents, opts.format, opts.is_tty);
     }
 
-    // 12. auto: detect platform, check existing PR, create PR
-    if opts.auto {
-        return create_pr(&git, &contents[0], &target, opts.draft, opts.push, opts.is_tty);
-    }
-
-    // 13. Interactive mode (bare `sk pr`)
+    // 12. Detect platform (needed for auto and interactive modes)
     let remote_url = match git.get_remote_url() {
         Ok(url) => url,
         Err(e) => {
@@ -233,17 +228,31 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         }
     };
 
-    let platform = match detect_platform(&remote_url) {
+    let platform = match detect_platform(&remote_url, Some(config.platform.as_str())) {
         Some(p) => p,
         None => {
             cliclack::log::error(
-                "Could not detect platform from remote URL. Currently only GitHub is supported.",
+                "Could not detect platform from remote URL. Set `platform: github` or `platform: gitlab` in your config.",
             )
             .ok();
             return 1;
         }
     };
 
+    // 13. auto: check existing PR, create PR
+    if opts.auto {
+        return create_pr(
+            platform.as_ref(),
+            &git,
+            &contents[0],
+            &target,
+            opts.draft,
+            opts.push,
+            opts.is_tty,
+        );
+    }
+
+    // 14. Interactive mode (bare `sk pr`)
     run_interactive_pr(
         &git,
         platform.as_ref(),
@@ -270,11 +279,11 @@ fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i3
         }
     };
 
-    let platform = match detect_platform(&remote_url) {
+    let platform = match detect_platform(&remote_url, Some(config.platform.as_str())) {
         Some(p) => p,
         None => {
             cliclack::log::error(
-                "Could not detect platform from remote URL. Currently only GitHub is supported.",
+                "Could not detect platform from remote URL. Set `platform: github` or `platform: gitlab` in your config.",
             )
             .ok();
             return 1;
@@ -282,17 +291,18 @@ fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i3
     };
 
     // 2. Check PR exists
+    let label = platform.pr_label();
     let existing = match platform.pr_exists(&branch) {
         Ok(Some(pr)) => pr,
         Ok(None) => {
             cliclack::log::error(format!(
-                "No open PR found for branch '{branch}'. Use `sk pr` to create one first."
+                "No open {label} found for branch '{branch}'. Use `sk pr` to create one first."
             ))
             .ok();
             return 1;
         }
         Err(e) => {
-            cliclack::log::error(format!("Failed to check for existing PR: {e}")).ok();
+            cliclack::log::error(format!("Failed to check for existing {label}: {e}")).ok();
             return 1;
         }
     };
@@ -525,6 +535,7 @@ fn run_confirmation_menu(
             Ok("create") => {
                 let content = PrContent { title: title.clone(), body: body.clone() };
                 return ConfirmationResult::Exit(create_pr(
+                    platform,
                     git,
                     &content,
                     target,
@@ -536,6 +547,7 @@ fn run_confirmation_menu(
             Ok("draft") => {
                 let content = PrContent { title: title.clone(), body: body.clone() };
                 return ConfirmationResult::Exit(create_pr(
+                    platform,
                     git,
                     &content,
                     target,
@@ -641,9 +653,10 @@ fn do_update_pr(
     }
 
     // Update the PR
+    let label = platform.pr_label();
     let sp = if is_tty {
         let s = cliclack::spinner();
-        s.start("Updating PR...");
+        s.start(format!("Updating {label}..."));
         Some(s)
     } else {
         None
@@ -654,14 +667,14 @@ fn do_update_pr(
             if let Some(s) = sp {
                 s.stop("Done");
             }
-            cliclack::log::success(format!("PR #{} updated: {}", pr_info.number, pr_info.url)).ok();
+            cliclack::log::success(format!("{label} updated: {}", pr_info.url)).ok();
             0
         }
         Err(e) => {
             if let Some(s) = sp {
                 s.stop("Failed");
             }
-            cliclack::log::error(format!("Failed to update PR: {e}")).ok();
+            cliclack::log::error(format!("Failed to update {label}: {e}")).ok();
             1
         }
     }
@@ -712,7 +725,7 @@ fn handle_context_regeneration(
         is_tty,
     ) {
         Ok(new_contents) => {
-            cliclack::log::success("PR content regenerated with new context.").ok();
+            cliclack::log::success("Content regenerated with new context.").ok();
             Some(new_contents)
         }
         Err(_) => {
@@ -799,6 +812,7 @@ fn render_dry_run(contents: &[PrContent], format: OutputFormat, is_tty: bool) ->
 }
 
 fn create_pr(
+    platform: &dyn PlatformAdapter,
     git: &GitAdapter,
     content: &PrContent,
     target: &str,
@@ -806,41 +820,23 @@ fn create_pr(
     push: bool,
     is_tty: bool,
 ) -> i32 {
-    // Detect platform from remote URL
-    let remote_url = match git.get_remote_url() {
-        Ok(url) => url,
-        Err(e) => {
-            cliclack::log::error(format!("Failed to get remote URL: {e}")).ok();
-            return 1;
-        }
-    };
-
-    let platform = match detect_platform(&remote_url) {
-        Some(p) => p,
-        None => {
-            cliclack::log::error(
-                "Could not detect platform from remote URL. Currently only GitHub is supported.",
-            )
-            .ok();
-            return 1;
-        }
-    };
-
     let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
+    let label = platform.pr_label();
+    let prefix = platform.pr_prefix();
 
     // Check for existing PR
     match platform.pr_exists(&branch) {
         Ok(Some(existing)) => {
             cliclack::log::warning(format!(
-                "PR #{} already exists for branch '{}': {}",
-                existing.number, branch, existing.url
+                "{label} {prefix}{} already exists for branch '{branch}': {}",
+                existing.number, existing.url
             ))
             .ok();
             return 0;
         }
         Ok(None) => {}
         Err(e) => {
-            cliclack::log::error(format!("Failed to check for existing PR: {e}")).ok();
+            cliclack::log::error(format!("Failed to check for existing {label}: {e}")).ok();
             return 1;
         }
     }
@@ -848,7 +844,7 @@ fn create_pr(
     // Create the PR
     let sp = if is_tty {
         let s = cliclack::spinner();
-        s.start("Creating PR...");
+        s.start(format!("Creating {label}..."));
         Some(s)
     } else {
         None
@@ -867,7 +863,11 @@ fn create_pr(
             if let Some(s) = sp {
                 s.stop("Done");
             }
-            cliclack::log::success(format!("PR #{} created: {}", pr_info.number, pr_info.url)).ok();
+            cliclack::log::success(format!(
+                "{label} {prefix}{} created: {}",
+                pr_info.number, pr_info.url
+            ))
+            .ok();
 
             // Check for unpushed commits and show hint
             if !push && let Ok(true) = git.has_unpushed_commits() {
@@ -883,7 +883,7 @@ fn create_pr(
             if let Some(s) = sp {
                 s.stop("Failed");
             }
-            cliclack::log::error(format!("Failed to create PR: {e}")).ok();
+            cliclack::log::error(format!("Failed to create {label}: {e}")).ok();
             1
         }
     }

@@ -12,6 +12,7 @@ AI-powered git workflow CLI. Generates commit messages, PR titles, and PR descri
 - **Prompt templates** — 5 built-in Tera templates, fully customizable with `sk config eject`
 - **Config & aliases** — layered YAML config (global + project), composable flag shortcuts
 - **Doctor** — environment, config, provider, and maintenance checks with `--fix` and `--full`
+- **Multi-platform** — GitHub and GitLab support with `sk pr` / `sk mr`
 - **Shell completions** — bash, zsh, and fish
 
 ## Install

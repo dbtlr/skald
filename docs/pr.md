@@ -2,6 +2,8 @@
 
 `sk pr` generates AI-powered PR titles and descriptions from your branch diff and commit history.
 
+> **GitLab users:** Use `sk mr` instead of `sk pr` — both commands are identical, but `mr` reads more naturally for merge requests. Output automatically uses "MR" terminology when connected to GitLab.
+
 ## Usage
 
 ```sh
