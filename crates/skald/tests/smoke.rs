@@ -39,8 +39,11 @@ fn completions_fish_outputs_script() {
 }
 
 #[test]
-fn commit_stub_shows_message() {
-    sk().arg("commit").assert().success().stderr(predicate::str::contains("Not yet implemented"));
+fn commit_bare_shows_interactive_not_implemented() {
+    sk().arg("commit")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Interactive mode not yet implemented"));
 }
 
 #[test]
@@ -208,4 +211,44 @@ fn config_eject_unknown_template_errors() {
         .env("XDG_CONFIG_HOME", tmp.path())
         .assert()
         .failure();
+}
+
+#[test]
+fn commit_help_shows_flags() {
+    sk().args(["commit", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--auto"))
+        .stdout(predicate::str::contains("--message-only"))
+        .stdout(predicate::str::contains("--amend"))
+        .stdout(predicate::str::contains("--context"))
+        .stdout(predicate::str::contains("--dry-run"));
+}
+
+#[test]
+fn commit_no_staged_changes_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    // Create a git repo with an initial commit but no staged changes
+    std::process::Command::new("git").args(["init"]).current_dir(tmp.path()).output().unwrap();
+    std::process::Command::new("git")
+        .args(["config", "user.email", "test@test.com"])
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .args(["config", "user.name", "Test"])
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .args(["commit", "--allow-empty", "-m", "init"])
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+
+    sk().args(["commit", "--auto"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No staged changes"));
 }
