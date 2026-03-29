@@ -102,6 +102,12 @@ pub enum Command {
         #[arg(long)]
         full: bool,
     },
+    /// Check for and install updates
+    Upgrade {
+        /// Show what would happen without downloading
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Generate shell completions
     Completions {
         /// Shell to generate completions for
