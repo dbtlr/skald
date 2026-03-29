@@ -241,7 +241,15 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
 
     // 13. auto: check existing PR, create PR
     if opts.auto {
-        return create_pr(platform.as_ref(), &git, &contents[0], &target, opts.draft, opts.push, opts.is_tty);
+        return create_pr(
+            platform.as_ref(),
+            &git,
+            &contents[0],
+            &target,
+            opts.draft,
+            opts.push,
+            opts.is_tty,
+        );
     }
 
     // 14. Interactive mode (bare `sk pr`)

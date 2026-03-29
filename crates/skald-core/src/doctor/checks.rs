@@ -231,7 +231,12 @@ pub fn provider_checks(full: bool) -> Vec<CheckResult> {
             }
         }
 
-        if Command::new("glab").arg("--version").output().map(|o| o.status.success()).unwrap_or(false) {
+        if Command::new("glab")
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
             let auth_result = Command::new("glab").args(["auth", "status"]).output();
             match auth_result {
                 Ok(output) if output.status.success() => {
