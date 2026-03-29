@@ -41,10 +41,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn eject_all_creates_five_files() {
+    fn eject_all_creates_four_files() {
         let dir = tempfile::tempdir().unwrap();
         let written = eject_prompts(dir.path(), None).unwrap();
-        assert_eq!(written.len(), 5);
+        assert_eq!(written.len(), 4);
         for name in builtin::all_template_names() {
             let path = dir.path().join(format!("{name}.md"));
             assert!(path.exists(), "Expected {name}.md to exist");
