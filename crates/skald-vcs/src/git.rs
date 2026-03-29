@@ -24,9 +24,8 @@ impl GitAdapter {
         if let Some(root) = &self.root {
             cmd.current_dir(root);
         }
-        let output = cmd
-            .output()
-            .map_err(|e| VcsError::CommandFailed(format!("failed to run git: {e}")))?;
+        let output =
+            cmd.output().map_err(|e| VcsError::CommandFailed(format!("failed to run git: {e}")))?;
 
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
@@ -196,11 +195,7 @@ mod tests {
         let path = dir.path();
 
         let run = |args: &[&str]| {
-            let status = Cmd::new("git")
-                .args(args)
-                .current_dir(path)
-                .status()
-                .expect("git");
+            let status = Cmd::new("git").args(args).current_dir(path).status().expect("git");
             assert!(status.success(), "git {args:?} failed");
         };
 
@@ -229,16 +224,8 @@ mod tests {
         run(&["checkout", "-b", "feature"]);
 
         fs::write(path.join("feature.txt"), "feature\n").unwrap();
-        Cmd::new("git")
-            .args(["add", "."])
-            .current_dir(path)
-            .status()
-            .unwrap();
-        Cmd::new("git")
-            .args(["commit", "-m", "add feature"])
-            .current_dir(path)
-            .status()
-            .unwrap();
+        Cmd::new("git").args(["add", "."]).current_dir(path).status().unwrap();
+        Cmd::new("git").args(["commit", "-m", "add feature"]).current_dir(path).status().unwrap();
 
         let log = adapter.get_commit_log("main").unwrap();
         assert!(log.contains("add feature"), "log should contain feature commit: {log}");
@@ -250,19 +237,11 @@ mod tests {
         let (dir, adapter) = make_repo();
         let path = dir.path();
 
-        Cmd::new("git")
-            .args(["checkout", "-b", "feature"])
-            .current_dir(path)
-            .status()
-            .unwrap();
+        Cmd::new("git").args(["checkout", "-b", "feature"]).current_dir(path).status().unwrap();
 
         fs::write(path.join("new.rs"), "fn foo() {}\n").unwrap();
         Cmd::new("git").args(["add", "."]).current_dir(path).status().unwrap();
-        Cmd::new("git")
-            .args(["commit", "-m", "add new.rs"])
-            .current_dir(path)
-            .status()
-            .unwrap();
+        Cmd::new("git").args(["commit", "-m", "add new.rs"]).current_dir(path).status().unwrap();
 
         let options = DiffOptions { staged: false, exclude_patterns: vec![] };
         let result = adapter.get_branch_diff("main", &options).unwrap();
@@ -276,11 +255,7 @@ mod tests {
         let (dir, adapter) = make_repo();
         let path = dir.path();
 
-        Cmd::new("git")
-            .args(["checkout", "-b", "feature"])
-            .current_dir(path)
-            .status()
-            .unwrap();
+        Cmd::new("git").args(["checkout", "-b", "feature"]).current_dir(path).status().unwrap();
 
         fs::write(path.join("Cargo.lock"), "[dependencies]\n").unwrap();
         fs::write(path.join("src.rs"), "fn bar() {}\n").unwrap();

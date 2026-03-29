@@ -47,19 +47,12 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
     }
 
     // 5. Resolve target branch: --base flag -> config.pr_target -> "main"
-    let target = opts
-        .base
-        .clone()
-        .unwrap_or_else(|| config.pr_target.clone());
+    let target = opts.base.clone().unwrap_or_else(|| config.pr_target.clone());
 
     // 6. Get branch diff and commit log
-    let diff_result = match git.get_branch_diff(
-        &target,
-        &DiffOptions {
-            staged: false,
-            exclude_patterns: vec![],
-        },
-    ) {
+    let diff_result = match git
+        .get_branch_diff(&target, &DiffOptions { staged: false, exclude_patterns: vec![] })
+    {
         Ok(d) => d,
         Err(e) => {
             cliclack::log::error(format!("Failed to get branch diff: {e}")).ok();
@@ -82,8 +75,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
     }
 
     // 8. Determine effective mode (title_only implied by -n when not auto/dry-run)
-    let effective_title_only =
-        opts.title_only || (opts.count != 3 && !opts.auto && !opts.dry_run);
+    let effective_title_only = opts.title_only || (opts.count != 3 && !opts.auto && !opts.dry_run);
 
     // 9. Build PromptContext
     let prompt_ctx = PromptContext::new()
@@ -126,10 +118,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
     };
 
     // 12. Create provider, show spinner, call generate_pr_content
-    let model = config
-        .providers
-        .get(&config.provider)
-        .and_then(|p| p.model.clone());
+    let model = config.providers.get(&config.provider).and_then(|p| p.model.clone());
     let provider = ClaudeCliProvider::new(model);
 
     let count = if opts.auto { 1 } else { opts.count };
@@ -142,10 +131,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         None
     };
 
-    let rt = match tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-    {
+    let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
         Ok(rt) => rt,
         Err(e) => {
             if let Some(s) = sp {
@@ -189,21 +175,16 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
 
     // 15. auto: detect platform, check existing PR, create PR
     if opts.auto {
-        return create_pr(
-            &git, &contents[0], &target, opts.draft, opts.push, opts.is_tty,
-        );
+        return create_pr(&git, &contents[0], &target, opts.draft, opts.push, opts.is_tty);
     }
 
     // 16. No mode flag: fall back to dry_run output with a warning
-    cliclack::log::warning("Interactive PR mode not yet implemented. Showing dry-run output.")
-        .ok();
+    cliclack::log::warning("Interactive PR mode not yet implemented. Showing dry-run output.").ok();
     render_dry_run(&contents, opts.format, opts.is_tty)
 }
 
 fn run_show_prompt(branch: &str, language: &str) -> i32 {
-    let ctx = mock_prompt_context()
-        .set("branch", branch)
-        .set("language", language);
+    let ctx = mock_prompt_context().set("branch", branch).set("language", language);
 
     match resolve_template("pr", None, None) {
         Ok(template) => match render_prompt(&template, &ctx) {
@@ -306,9 +287,7 @@ fn create_pr(
         }
     };
 
-    let branch = git
-        .get_current_branch()
-        .unwrap_or_else(|_| "HEAD".to_string());
+    let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
 
     // Check for existing PR
     match platform.pr_exists(&branch) {
@@ -349,17 +328,14 @@ fn create_pr(
             if let Some(s) = sp {
                 s.stop("Done");
             }
-            cliclack::log::success(format!("PR #{} created: {}", pr_info.number, pr_info.url))
-                .ok();
+            cliclack::log::success(format!("PR #{} created: {}", pr_info.number, pr_info.url)).ok();
 
             // Check for unpushed commits and show hint
-            if !push {
-                if let Ok(true) = git.has_unpushed_commits() {
-                    cliclack::log::info(
-                        "You have unpushed commits. Use `sk pr --push --update` to push and update the PR.",
-                    )
-                    .ok();
-                }
+            if !push && let Ok(true) = git.has_unpushed_commits() {
+                cliclack::log::info(
+                    "You have unpushed commits. Use `sk pr --push --update` to push and update the PR.",
+                )
+                .ok();
             }
 
             0

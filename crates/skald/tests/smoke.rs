@@ -65,10 +65,11 @@ fn pr_help_shows_flags() {
 
 #[test]
 fn pr_update_shows_coming_soon() {
-    sk().args(["pr", "--update"])
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("not yet implemented").or(predicate::str::contains("Not yet implemented")).or(predicate::str::contains("coming")));
+    sk().args(["pr", "--update"]).assert().success().stderr(
+        predicate::str::contains("not yet implemented")
+            .or(predicate::str::contains("Not yet implemented"))
+            .or(predicate::str::contains("coming")),
+    );
 }
 
 #[test]
@@ -85,11 +86,7 @@ fn pr_not_in_repo_errors() {
 fn pr_no_commits_ahead_errors() {
     let tmp = tempfile::tempdir().unwrap();
     let run = |args: &[&str]| {
-        std::process::Command::new("git")
-            .args(args)
-            .current_dir(tmp.path())
-            .output()
-            .unwrap()
+        std::process::Command::new("git").args(args).current_dir(tmp.path()).output().unwrap()
     };
 
     run(&["init"]);

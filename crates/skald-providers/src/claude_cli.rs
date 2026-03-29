@@ -90,21 +90,19 @@ impl ClaudeCliProvider {
         commit_log: &str,
     ) -> Result<String, ProviderError> {
         // Write diff to temp file
-        let mut diff_tmp = Builder::new()
-            .prefix("skald-pr-diff-")
-            .suffix(".patch")
-            .tempfile()
-            .map_err(|e| ProviderError::Other(format!("Failed to create diff temp file: {e}")))?;
+        let mut diff_tmp =
+            Builder::new().prefix("skald-pr-diff-").suffix(".patch").tempfile().map_err(|e| {
+                ProviderError::Other(format!("Failed to create diff temp file: {e}"))
+            })?;
         diff_tmp
             .write_all(diff.as_bytes())
             .map_err(|e| ProviderError::Other(format!("Failed to write diff: {e}")))?;
 
         // Write commit log to temp file
-        let mut log_tmp = Builder::new()
-            .prefix("skald-pr-log-")
-            .suffix(".txt")
-            .tempfile()
-            .map_err(|e| ProviderError::Other(format!("Failed to create log temp file: {e}")))?;
+        let mut log_tmp =
+            Builder::new().prefix("skald-pr-log-").suffix(".txt").tempfile().map_err(|e| {
+                ProviderError::Other(format!("Failed to create log temp file: {e}"))
+            })?;
         log_tmp
             .write_all(commit_log.as_bytes())
             .map_err(|e| ProviderError::Other(format!("Failed to write commit log: {e}")))?;
@@ -152,11 +150,8 @@ fn parse_pr_response(response: &str, count: usize) -> Vec<PrContent> {
         return vec![];
     }
 
-    let candidates: Vec<&str> = if count > 1 {
-        response.split("\n---\n").collect()
-    } else {
-        vec![response]
-    };
+    let candidates: Vec<&str> =
+        if count > 1 { response.split("\n---\n").collect() } else { vec![response] };
 
     candidates
         .into_iter()
@@ -212,9 +207,8 @@ impl Provider for ClaudeCliProvider {
         ctx: &PrContext,
         count: usize,
     ) -> Result<Vec<PrContent>, ProviderError> {
-        let response = self
-            .call_claude_pr(&ctx.rendered_prompt, &ctx.diff, &ctx.commit_log)
-            .await?;
+        let response =
+            self.call_claude_pr(&ctx.rendered_prompt, &ctx.diff, &ctx.commit_log).await?;
         let contents = parse_pr_response(&response, count);
         if contents.is_empty() {
             return Err(ProviderError::Generation {
@@ -259,7 +253,8 @@ mod tests {
 
     #[test]
     fn parse_pr_response_multiple() {
-        let response = "First title\n\n## What\nFirst body\n\n---\n\nSecond title\n\n## What\nSecond body";
+        let response =
+            "First title\n\n## What\nFirst body\n\n---\n\nSecond title\n\n## What\nSecond body";
         let contents = parse_pr_response(response, 2);
         assert_eq!(contents.len(), 2);
         assert_eq!(contents[0].title, "First title");

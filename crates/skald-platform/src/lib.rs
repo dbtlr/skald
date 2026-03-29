@@ -27,14 +27,10 @@ pub struct CreatePrRequest {
 
 #[derive(Debug, thiserror::Error)]
 pub enum PlatformError {
-    #[error(
-        "{cli} CLI not found. Install it from: {install_url}"
-    )]
+    #[error("{cli} CLI not found. Install it from: {install_url}")]
     CliNotFound { cli: String, install_url: String },
 
-    #[error(
-        "Not authenticated with {cli}. Run: {auth_command}"
-    )]
+    #[error("Not authenticated with {cli}. Run: {auth_command}")]
     NotAuthenticated { cli: String, auth_command: String },
 
     #[error("API error: {detail}")]

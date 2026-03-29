@@ -8,19 +8,11 @@ pub struct GitHubAdapter;
 
 impl GitHubAdapter {
     pub fn detect(remote_url: &str) -> Option<Self> {
-        if remote_url.contains("github.com") {
-            Some(GitHubAdapter)
-        } else {
-            None
-        }
+        if remote_url.contains("github.com") { Some(GitHubAdapter) } else { None }
     }
 
     pub fn is_available() -> bool {
-        Command::new("gh")
-            .arg("--version")
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false)
+        Command::new("gh").arg("--version").output().map(|o| o.status.success()).unwrap_or(false)
     }
 
     fn check_available(&self) -> Result<(), PlatformError> {
@@ -79,17 +71,14 @@ impl PlatformAdapter for GitHubAdapter {
             if let Some(auth_err) = Self::check_auth_error(&stderr) {
                 return Err(auth_err);
             }
-            return Err(PlatformError::ApiError {
-                detail: stderr.trim().to_string(),
-            });
+            return Err(PlatformError::ApiError { detail: stderr.trim().to_string() });
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         debug!("gh pr list output: {}", stdout.trim());
 
-        let prs: Vec<PrInfo> = serde_json::from_str(&stdout).map_err(|e| {
-            PlatformError::Other(format!("Failed to parse gh output: {e}"))
-        })?;
+        let prs: Vec<PrInfo> = serde_json::from_str(&stdout)
+            .map_err(|e| PlatformError::Other(format!("Failed to parse gh output: {e}")))?;
 
         Ok(prs.into_iter().next())
     }
@@ -99,17 +88,15 @@ impl PlatformAdapter for GitHubAdapter {
 
         if request.push {
             debug!("Pushing branch to origin before creating PR");
-            let push_output = Command::new("git")
-                .args(["push", "-u", "origin", "HEAD"])
-                .output()
-                .map_err(|e| PlatformError::Other(format!("Failed to run git push: {e}")))?;
+            let push_output =
+                Command::new("git")
+                    .args(["push", "-u", "origin", "HEAD"])
+                    .output()
+                    .map_err(|e| PlatformError::Other(format!("Failed to run git push: {e}")))?;
 
             if !push_output.status.success() {
                 let stderr = String::from_utf8_lossy(&push_output.stderr);
-                return Err(PlatformError::Other(format!(
-                    "git push failed: {}",
-                    stderr.trim()
-                )));
+                return Err(PlatformError::Other(format!("git push failed: {}", stderr.trim())));
             }
         }
 
@@ -141,19 +128,12 @@ impl PlatformAdapter for GitHubAdapter {
             if let Some(auth_err) = Self::check_auth_error(&stderr) {
                 return Err(auth_err);
             }
-            return Err(PlatformError::ApiError {
-                detail: stderr.trim().to_string(),
-            });
+            return Err(PlatformError::ApiError { detail: stderr.trim().to_string() });
         }
 
         // After creation, fetch structured PrInfo via `gh pr view`
         let view_output = Command::new("gh")
-            .args([
-                "pr",
-                "view",
-                "--json",
-                "number,url,state,title,headRefName,baseRefName",
-            ])
+            .args(["pr", "view", "--json", "number,url,state,title,headRefName,baseRefName"])
             .output();
 
         match view_output {
@@ -163,7 +143,9 @@ impl PlatformAdapter for GitHubAdapter {
                 match serde_json::from_str::<PrInfo>(&view_stdout) {
                     Ok(info) => Ok(info),
                     Err(e) => {
-                        debug!("Failed to parse gh pr view output: {e}, falling back to minimal PrInfo");
+                        debug!(
+                            "Failed to parse gh pr view output: {e}, falling back to minimal PrInfo"
+                        );
                         fallback_pr_info(&output)
                     }
                 }
@@ -178,9 +160,7 @@ impl PlatformAdapter for GitHubAdapter {
 
 fn fallback_pr_info(create_output: &std::process::Output) -> Result<PrInfo, PlatformError> {
     // `gh pr create` prints the PR URL on stdout on success
-    let url = String::from_utf8_lossy(&create_output.stdout)
-        .trim()
-        .to_string();
+    let url = String::from_utf8_lossy(&create_output.stdout).trim().to_string();
     Ok(PrInfo {
         number: 0,
         url,
