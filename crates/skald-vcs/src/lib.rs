@@ -37,7 +37,12 @@ pub enum VcsError {
 pub trait VcsAdapter: Send + Sync {
     fn name(&self) -> &str;
     fn get_diff(&self, options: &DiffOptions) -> Result<DiffResult, VcsError>;
-    fn get_branch_diff(&self, target: &str, source: &str, options: &DiffOptions) -> Result<DiffResult, VcsError>;
+    fn get_branch_diff(
+        &self,
+        target: &str,
+        source: &str,
+        options: &DiffOptions,
+    ) -> Result<DiffResult, VcsError>;
     fn get_commit_log(&self, target: &str, source: &str) -> Result<String, VcsError>;
     fn get_upstream_ref(&self) -> Result<String, VcsError>;
     fn has_unpushed_commits(&self) -> Result<bool, VcsError>;

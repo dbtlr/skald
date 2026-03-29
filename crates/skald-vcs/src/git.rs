@@ -99,7 +99,12 @@ impl VcsAdapter for GitAdapter {
         Ok(DiffResult { diff, stat, files_changed, insertions, deletions })
     }
 
-    fn get_branch_diff(&self, target: &str, source: &str, options: &DiffOptions) -> Result<DiffResult, VcsError> {
+    fn get_branch_diff(
+        &self,
+        target: &str,
+        source: &str,
+        options: &DiffOptions,
+    ) -> Result<DiffResult, VcsError> {
         let range = format!("{target}...{source}");
         let raw_diff = self.run_git(&["diff", &range])?;
         let diff = filter_diff(&raw_diff, &options.exclude_patterns, true);

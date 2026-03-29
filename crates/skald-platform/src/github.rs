@@ -176,7 +176,13 @@ impl PlatformAdapter for GitHubAdapter {
 
         // Fetch updated PR info
         let view_output = Command::new("gh")
-            .args(["pr", "view", branch, "--json", "number,url,state,title,headRefName,baseRefName"])
+            .args([
+                "pr",
+                "view",
+                branch,
+                "--json",
+                "number,url,state,title,headRefName,baseRefName",
+            ])
             .output();
 
         match view_output {

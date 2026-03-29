@@ -164,9 +164,11 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
     // 6. Get branch diff and commit log using resolved source ref
     let source = resolve_source_ref(&git, opts.push);
 
-    let diff_result = match git
-        .get_branch_diff(&target, &source, &DiffOptions { staged: false, exclude_patterns: vec![] })
-    {
+    let diff_result = match git.get_branch_diff(
+        &target,
+        &source,
+        &DiffOptions { staged: false, exclude_patterns: vec![] },
+    ) {
         Ok(d) => d,
         Err(e) => {
             cliclack::log::error(format!("Failed to get branch diff: {e}")).ok();
@@ -296,18 +298,17 @@ fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i3
     };
 
     // 3. Resolve target from --base flag or existing PR's base branch
-    let target = opts
-        .base
-        .clone()
-        .unwrap_or_else(|| existing.base_branch.clone());
+    let target = opts.base.clone().unwrap_or_else(|| existing.base_branch.clone());
 
     // 4. Resolve source ref
     let source = resolve_source_ref(git, opts.push);
 
     // 5. Get diff and commit log
-    let diff_result = match git
-        .get_branch_diff(&target, &source, &DiffOptions { staged: false, exclude_patterns: vec![] })
-    {
+    let diff_result = match git.get_branch_diff(
+        &target,
+        &source,
+        &DiffOptions { staged: false, exclude_patterns: vec![] },
+    ) {
         Ok(d) => d,
         Err(e) => {
             cliclack::log::error(format!("Failed to get branch diff: {e}")).ok();
@@ -522,10 +523,7 @@ fn run_confirmation_menu(
 
         match action {
             Ok("create") => {
-                let content = PrContent {
-                    title: title.clone(),
-                    body: body.clone(),
-                };
+                let content = PrContent { title: title.clone(), body: body.clone() };
                 return ConfirmationResult::Exit(create_pr(
                     git,
                     &content,
@@ -536,10 +534,7 @@ fn run_confirmation_menu(
                 ));
             }
             Ok("draft") => {
-                let content = PrContent {
-                    title: title.clone(),
-                    body: body.clone(),
-                };
+                let content = PrContent { title: title.clone(), body: body.clone() };
                 return ConfirmationResult::Exit(create_pr(
                     git,
                     &content,
@@ -550,10 +545,7 @@ fn run_confirmation_menu(
                 ));
             }
             Ok("update") => {
-                let content = PrContent {
-                    title: title.clone(),
-                    body: body.clone(),
-                };
+                let content = PrContent { title: title.clone(), body: body.clone() };
                 return ConfirmationResult::Exit(do_update_pr(
                     git,
                     platform,
@@ -564,9 +556,8 @@ fn run_confirmation_menu(
                 ));
             }
             Ok("edit_title") => {
-                let edited: Result<String, _> = cliclack::input("Edit PR title:")
-                    .default_input(&title)
-                    .interact();
+                let edited: Result<String, _> =
+                    cliclack::input("Edit PR title:").default_input(&title).interact();
                 match edited {
                     Ok(new_title) if !new_title.is_empty() => {
                         title = new_title;

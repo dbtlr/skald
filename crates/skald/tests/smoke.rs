@@ -97,11 +97,7 @@ fn pr_update_no_existing_pr_errors() {
     run(&["add", "."]);
     run(&["commit", "-m", "init"]);
 
-    let output = sk()
-        .args(["pr", "--update", "--auto"])
-        .current_dir(tmp.path())
-        .output()
-        .unwrap();
+    let output = sk().args(["pr", "--update", "--auto"]).current_dir(tmp.path()).output().unwrap();
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
