@@ -65,11 +65,17 @@ sk pr --dry-run
 # Generate title suggestions only
 sk pr --title-only
 
+# Interactive PR creation
+sk pr
+
 # Auto-create a PR on GitHub
 sk pr --auto
 
 # Push the branch and open a draft PR in one step
 sk pr --auto --draft --push
+
+# Update an existing PR after pushing new commits
+sk pr --push --update
 ```
 
 `sk pr --auto` requires the GitHub CLI (`gh`). See [platforms.md](platforms.md) for setup.
