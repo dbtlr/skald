@@ -39,6 +39,44 @@ sk completions bash > ~/.local/share/bash-completion/completions/sk
 sk completions fish > ~/.config/fish/completions/sk.fish
 ```
 
+## Commit Workflow
+
+Stage your changes and generate a commit message:
+
+```sh
+# Interactive carousel — pick from multiple suggestions
+sk commit
+
+# Auto-accept the top suggestion, no prompts
+sk commit --auto
+
+# Stage all modified files and auto-commit
+sk commit --auto -a
+```
+
+## PR Workflow
+
+Generate a PR title and description from your branch:
+
+```sh
+# Preview what would be created (no side effects)
+sk pr --dry-run
+
+# Generate title suggestions only
+sk pr --title-only
+
+# Auto-create a PR on GitHub
+sk pr --auto
+
+# Push the branch and open a draft PR in one step
+sk pr --auto --draft --push
+```
+
+`sk pr --auto` requires the GitHub CLI (`gh`). See [platforms.md](platforms.md) for setup.
+
 ## What's Next
 
-Most commands are stubs in this release. The commit workflow arrives in M1, configuration in M1/M2, and PR workflows in M2.
+- [Commit](commit.md) — full commit workflow reference
+- [PR](pr.md) — PR generation and creation options
+- [Configuration](configuration.md) — layered config, project overrides, aliases
+- [Doctor](doctor.md) — validate your environment

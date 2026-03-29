@@ -7,6 +7,7 @@ AI-powered git workflow CLI. Generates commit messages, PR titles, and PR descri
 - **Smart commits** — AI-generated commit messages from your staged diff
 - **Interactive carousel** — cycle through multiple message candidates before committing
 - **Extended descriptions** — generate a commit body alongside the title
+- **PR generation** — AI-generated PR titles and descriptions from your branch diff and commit history
 - **Context injection** — pass hints via `--context`, `--context-file`, or interactively
 - **Prompt templates** — 5 built-in Tera templates, fully customizable with `sk config eject`
 - **Config & aliases** — layered YAML config (global + project), composable flag shortcuts
@@ -48,6 +49,18 @@ sk commit --message-only
 
 # Give the AI extra context about your change
 sk commit --auto --context "refactored auth to use JWT"
+
+# Preview a PR title and description without creating anything
+sk pr --dry-run
+
+# Get multiple PR title suggestions
+sk pr --title-only
+
+# Auto-create a PR on GitHub
+sk pr --auto
+
+# Push the branch and open a draft PR in one step
+sk pr --auto --draft --push
 
 # Validate your environment
 sk doctor
@@ -97,6 +110,8 @@ Run `sk aliases` to see active aliases and their sources.
 - [Aliases](docs/aliases.md) — composable flag shortcuts
 - [Prompts](docs/prompts.md) — template system, customization, eject workflow
 - [Commit](docs/commit.md) — commit message generation, modes, and options
+- [PR](docs/pr.md) — PR title/description generation and creation
+- [Platforms](docs/platforms.md) — GitHub setup and platform configuration
 - [Doctor](docs/doctor.md) — environment validation, auto-fix, diagnostics
 
 ## License
