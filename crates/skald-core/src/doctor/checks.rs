@@ -154,8 +154,64 @@ fn check_project_config() -> CheckResult {
 // Provider checks
 // ---------------------------------------------------------------------------
 
-pub fn provider_checks() -> Vec<CheckResult> {
-    vec![check_claude_cli()]
+pub fn provider_checks(full: bool) -> Vec<CheckResult> {
+    let mut results = vec![check_claude_cli()];
+
+    if full {
+        let test_result = Command::new("claude")
+            .args(["-p", "Reply with exactly: ok", "--max-turns", "1"])
+            .output();
+
+        match test_result {
+            Ok(output) if output.status.success() => {
+                let response = String::from_utf8_lossy(&output.stdout);
+                if response.to_lowercase().contains("ok") {
+                    results.push(
+                        CheckResult::pass(
+                            "claude_connectivity",
+                            "Claude CLI responded successfully",
+                        )
+                        .with_category(Category::Provider),
+                    );
+                } else {
+                    results.push(
+                        CheckResult::warn(
+                            "claude_connectivity",
+                            "Claude CLI responded but output unexpected",
+                        )
+                        .with_category(Category::Provider)
+                        .with_suggestion("Check Claude CLI authentication"),
+                    );
+                }
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                results.push(
+                    CheckResult::fail(
+                        "claude_connectivity",
+                        &format!(
+                            "Claude CLI failed: {}",
+                            stderr.lines().next().unwrap_or("unknown error")
+                        ),
+                    )
+                    .with_category(Category::Provider)
+                    .with_suggestion("Run `claude` to check authentication"),
+                );
+            }
+            Err(e) => {
+                results.push(
+                    CheckResult::fail(
+                        "claude_connectivity",
+                        &format!("Could not run Claude CLI: {e}"),
+                    )
+                    .with_category(Category::Provider)
+                    .with_suggestion("Install: npm install -g @anthropic-ai/claude-code"),
+                );
+            }
+        }
+    }
+
+    results
 }
 
 fn check_claude_cli() -> CheckResult {
@@ -324,7 +380,7 @@ mod tests {
 
     #[test]
     fn provider_checks_have_correct_category() {
-        let results = provider_checks();
+        let results = provider_checks(false);
         for r in &results {
             assert_eq!(r.category, Category::Provider, "check '{}' has wrong category", r.name);
         }
