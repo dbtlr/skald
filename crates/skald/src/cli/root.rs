@@ -67,6 +67,9 @@ pub enum Command {
         /// Print what would be committed without executing
         #[arg(long)]
         dry_run: bool,
+        /// Generate extended description (commit body)
+        #[arg(long)]
+        extended: bool,
     },
     /// Generate PR title and description
     Pr {
