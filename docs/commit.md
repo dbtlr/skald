@@ -88,6 +88,29 @@ sk commit --message-only --format table   # tabular output
 sk commit --message-only --format json    # JSON array
 ```
 
-## Interactive Mode
+## Interactive Mode (Default)
 
-Interactive mode (`sk commit` with no flags) is planned for M5. For now, use `--auto` or `--message-only`.
+When you run `sk commit` without `--auto` or `--message-only`, skald enters an interactive carousel:
+
+1. Analyzes staged changes
+2. Generates commit message suggestions via AI
+3. Presents a carousel for selection
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `←` `→` | Cycle through suggestions |
+| `a` / Enter | Accept and commit |
+| `e` | Edit the message inline |
+| `?` | Show action menu (accept, amend, abort) |
+| Esc / Ctrl+C | Abort |
+
+### No Staged Changes
+
+If no changes are staged, skald detects unstaged files and offers to stage them:
+- **Stage all (-A)** — includes new and modified files
+- **Stage tracked (-a)** — modified files only
+- **Abort** — exit without staging
+
+This only appears in interactive (TTY) mode. In non-interactive mode, use `-a` or `-A` flags.

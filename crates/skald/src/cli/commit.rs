@@ -40,12 +40,6 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
         return run_show_prompt(&branch, &config.language);
     }
 
-    // If neither --auto nor --message-only, interactive mode is not yet ready
-    if !opts.auto && !opts.message_only {
-        println!("Interactive mode not yet implemented — use --auto or --message-only");
-        return 0;
-    }
-
     // 3. Stage if requested
     if opts.stage_all {
         if let Err(e) = git.stage(StageMode::All) {
@@ -62,11 +56,17 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     // 4. Check for staged changes
     match git.has_staged_changes() {
         Ok(false) => {
-            cliclack::log::error(
-                "No staged changes found. Stage files first with `git add` or use `-a`/`-A`.",
-            )
-            .ok();
-            return 1;
+            if let Some(code) = handle_no_staged_changes(&git, opts.is_tty) {
+                return code;
+            }
+            // Verify staging actually produced changes
+            match git.has_staged_changes() {
+                Ok(true) => {}
+                _ => {
+                    cliclack::log::error("Still no staged changes after staging.").ok();
+                    return 1;
+                }
+            }
         }
         Err(e) => {
             cliclack::log::error(format!("Failed to check staged changes: {e}")).ok();
@@ -184,42 +184,68 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
 
     // 15. auto mode: take first message, commit (or amend)
     if opts.auto {
-        let msg = &messages[0];
-
-        if opts.dry_run {
-            println!("Would commit with message: {msg}");
-            return 0;
-        }
-
-        let result = if opts.amend { git.commit_amend(msg) } else { git.commit(msg) };
-
-        return match result {
-            Ok(output) => {
-                cliclack::log::success(format!(
-                    "{}committed: {msg}",
-                    if opts.amend { "amended and " } else { "" }
-                ))
-                .ok();
-                tracing::debug!(%output, "git commit output");
-                0
-            }
-            Err(e) => {
-                cliclack::log::error(format!("Commit failed: {e}")).ok();
-                1
-            }
-        };
+        return do_commit(&git, &messages[0], opts.amend, opts.dry_run);
     }
 
-    // 16. dry_run without auto (shouldn't normally reach here, but handle it)
-    if opts.dry_run {
-        for (i, msg) in messages.iter().enumerate() {
-            println!("  {}. {msg}", i + 1);
+    // 16. Interactive mode (default — no --auto or --message-only)
+    run_interactive(&messages, &git, opts.amend, opts.dry_run)
+}
+
+/// Handle the case where no changes are staged.
+///
+/// Returns `Some(exit_code)` if the commit flow should stop,
+/// or `None` if staging succeeded and the flow should continue.
+fn handle_no_staged_changes(git: &GitAdapter, is_tty: bool) -> Option<i32> {
+    // Check if there are unstaged changes we could offer to stage.
+    let has_unstaged = match git.has_unstaged_changes() {
+        Ok(v) => v,
+        Err(e) => {
+            cliclack::log::error(format!("Failed to check unstaged changes: {e}")).ok();
+            return Some(1);
         }
-        println!("\n(dry run — nothing committed)");
-        return 0;
+    };
+
+    if !has_unstaged {
+        cliclack::log::error("No staged or unstaged changes found.").ok();
+        return Some(1);
     }
 
-    0
+    // Non-interactive: can't prompt, just tell the user what to do.
+    if !is_tty {
+        cliclack::log::error(
+            "No staged changes found. Use `-a` to stage tracked files or `-A` to stage all.",
+        )
+        .ok();
+        return Some(1);
+    }
+
+    // Interactive: offer to stage.
+    let selection = cliclack::select("No staged changes. How would you like to proceed?")
+        .item("all", "Stage all (-A)", "includes untracked files")
+        .item("tracked", "Stage tracked (-a)", "only already-tracked files")
+        .item("abort", "Abort", "")
+        .interact();
+
+    match selection {
+        Ok("all") => {
+            if let Err(e) = git.stage(StageMode::All) {
+                cliclack::log::error(format!("Failed to stage files: {e}")).ok();
+                return Some(1);
+            }
+            None
+        }
+        Ok("tracked") => {
+            if let Err(e) = git.stage(StageMode::Tracked) {
+                cliclack::log::error(format!("Failed to stage files: {e}")).ok();
+                return Some(1);
+            }
+            None
+        }
+        Ok(_) | Err(_) => {
+            // "abort" or cancelled
+            Some(130)
+        }
+    }
 }
 
 fn run_show_prompt(branch: &str, language: &str) -> i32 {
@@ -281,6 +307,91 @@ fn extract_files_from_stat(stat: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+fn run_interactive(messages: &[String], git: &GitAdapter, amend: bool, dry_run: bool) -> i32 {
+    use crate::ui::carousel::{CarouselResult, show_carousel};
+
+    loop {
+        let result = match show_carousel(messages) {
+            Ok(r) => r,
+            Err(e) => {
+                cliclack::log::error(format!("Carousel error: {e}")).ok();
+                return 1;
+            }
+        };
+
+        match result {
+            CarouselResult::Accept(idx) => {
+                return do_commit(git, &messages[idx], amend, dry_run);
+            }
+            CarouselResult::Edit(idx) => {
+                // Use cliclack input for inline editing
+                let edited: Result<String, _> = cliclack::input("Edit commit message:")
+                    .default_input(&messages[idx])
+                    .interact();
+                match edited {
+                    Ok(msg) if !msg.is_empty() => {
+                        return do_commit(git, &msg, amend, dry_run);
+                    }
+                    Ok(_) => {
+                        cliclack::log::warning("Empty message — returning to carousel.").ok();
+                        continue;
+                    }
+                    Err(_) => {
+                        cliclack::log::info("Aborted.").ok();
+                        return 130;
+                    }
+                }
+            }
+            CarouselResult::Menu(idx) => {
+                let choice = cliclack::select("What would you like to do?")
+                    .item("accept", "Accept", format!("commit: {}", &messages[idx]))
+                    .item("amend", "Amend", "commit with --amend")
+                    .item("abort", "Abort", "exit without committing")
+                    .interact();
+
+                match choice {
+                    Ok("accept") => return do_commit(git, &messages[idx], false, dry_run),
+                    Ok("amend") => return do_commit(git, &messages[idx], true, dry_run),
+                    Ok("abort") | Err(_) => {
+                        cliclack::log::info("Aborted.").ok();
+                        return 130;
+                    }
+                    _ => continue,
+                }
+            }
+            CarouselResult::Abort => {
+                cliclack::log::info("Aborted.").ok();
+                return 130;
+            }
+        }
+    }
+}
+
+fn do_commit(git: &GitAdapter, message: &str, amend: bool, dry_run: bool) -> i32 {
+    if dry_run {
+        cliclack::log::info(format!("Would commit: {message}")).ok();
+        return 0;
+    }
+
+    let result = if amend { git.commit_amend(message) } else { git.commit(message) };
+
+    match result {
+        Ok(output) => {
+            cliclack::log::success(format!(
+                "{}committed: {message}",
+                if amend { "amended and " } else { "" }
+            ))
+            .ok();
+            tracing::debug!(%output, "git commit output");
+            0
+        }
+        Err(e) => {
+            cliclack::log::error(format!("Commit failed: {e}")).ok();
+            1
+        }
+    }
 }
 
 fn render_messages(messages: &[String], format: OutputFormat, is_tty: bool) -> i32 {
