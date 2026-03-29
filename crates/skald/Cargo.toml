@@ -19,6 +19,7 @@ clap = { version = "4", features = ["derive"] }
 clap_complete = "4"
 cliclack = "0.3"
 console = "0.15"
+crossterm = "0.29"
 serde_json = "1"
 tracing = "0.1"
 tokio = { version = "1", features = ["rt", "macros"] }
