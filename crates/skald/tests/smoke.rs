@@ -236,6 +236,11 @@ fn commit_extended_flag_in_help() {
 }
 
 #[test]
+fn doctor_full_flag_in_help() {
+    sk().args(["doctor", "--help"]).assert().success().stdout(predicate::str::contains("--full"));
+}
+
+#[test]
 fn commit_no_staged_changes_errors() {
     let tmp = tempfile::tempdir().unwrap();
     // Create a git repo with an initial commit but no staged changes
