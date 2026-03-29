@@ -117,3 +117,67 @@ The target branch is resolved in this order:
 ## Platform Support
 
 `sk pr --auto` requires a supported platform to create PRs. See [platforms.md](platforms.md) for setup instructions and supported platforms.
+
+## Interactive Mode
+
+Running `sk pr` without `--auto`, `--title-only`, or `--dry-run` enters interactive mode.
+
+### Stage 1: Title Selection
+
+A carousel displays AI-generated title suggestions. Navigate with arrow keys:
+
+| Key | Action |
+|-----|--------|
+| ← → | Cycle through suggestions |
+| `a` / Enter | Accept title |
+| `e` | Edit title inline |
+| `?` | More options |
+| Esc | Abort |
+
+### Stage 2: Review and Confirm
+
+After selecting a title, the full PR (title + body) is displayed for review:
+
+| Option | Description |
+|--------|-------------|
+| Create | Create the PR |
+| Draft | Create as draft |
+| Edit title | Edit the title inline |
+| Edit body | Open body in `$EDITOR` |
+| Context | Add context and regenerate |
+| Abort | Exit without creating |
+
+### Editor Setup
+
+Body editing opens your preferred editor. Set `$VISUAL` or `$EDITOR`:
+
+```sh
+export VISUAL="code --wait"  # VS Code
+export EDITOR="nvim"         # Neovim
+```
+
+Falls back to `vi` if neither is set.
+
+## Updating a PR
+
+Regenerate the title and description for an existing PR:
+
+```sh
+# Interactive update
+sk pr --update
+
+# Auto-update (no interaction)
+sk pr --update --auto
+
+# Push changes then update
+sk pr --push --update
+
+# Preview without updating
+sk pr --update --dry-run
+```
+
+The `--update` flag detects the existing PR for your current branch and regenerates its title and description from the latest diff and commit history.
+
+### Diff Scope
+
+Without `--push`, the generated content reflects only what's already pushed to the remote. With `--push`, local unpushed commits are included in the diff sent to the AI.

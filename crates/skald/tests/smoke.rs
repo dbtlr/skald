@@ -64,11 +64,50 @@ fn pr_help_shows_flags() {
 }
 
 #[test]
-fn pr_update_shows_coming_soon() {
-    sk().args(["pr", "--update"]).assert().success().stderr(
-        predicate::str::contains("not yet implemented")
-            .or(predicate::str::contains("Not yet implemented"))
-            .or(predicate::str::contains("coming")),
+fn pr_update_not_in_repo_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["pr", "--update"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Not in a git repository"));
+}
+
+#[test]
+fn pr_update_auto_not_in_repo_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    sk().args(["pr", "--update", "--auto"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Not in a git repository"));
+}
+
+#[test]
+fn pr_update_no_existing_pr_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    let run = |args: &[&str]| {
+        std::process::Command::new("git").args(args).current_dir(tmp.path()).output().unwrap()
+    };
+
+    run(&["init"]);
+    run(&["config", "user.email", "test@test.com"]);
+    run(&["config", "user.name", "Test"]);
+    std::fs::write(tmp.path().join("file.txt"), "initial").unwrap();
+    run(&["add", "."]);
+    run(&["commit", "-m", "init"]);
+
+    let output = sk().args(["pr", "--update", "--auto"]).current_dir(tmp.path()).output().unwrap();
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("No PR found")
+            || stderr.contains("Could not detect platform")
+            || stderr.contains("Failed to get remote URL")
+            || stderr.contains("No open PR")
+            // sandbox/CI: tracing-appender cannot write log files
+            || stderr.contains("initializing rolling file appender failed"),
+        "Unexpected stderr: {stderr}"
     );
 }
 

@@ -95,7 +95,7 @@ pub enum Command {
         /// Push current branch to remote before creating PR
         #[arg(long)]
         push: bool,
-        /// Update existing PR (coming soon)
+        /// Update existing PR title and description
         #[arg(long)]
         update: bool,
         /// Target branch

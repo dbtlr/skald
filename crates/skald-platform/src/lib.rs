@@ -44,6 +44,7 @@ pub trait PlatformAdapter: Send + Sync {
     fn name(&self) -> &str;
     fn pr_exists(&self, branch: &str) -> Result<Option<PrInfo>, PlatformError>;
     fn create_pr(&self, request: &CreatePrRequest) -> Result<PrInfo, PlatformError>;
+    fn update_pr(&self, branch: &str, title: &str, body: &str) -> Result<PrInfo, PlatformError>;
 }
 
 pub fn detect_platform(remote_url: &str) -> Option<Box<dyn PlatformAdapter>> {
