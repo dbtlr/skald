@@ -54,6 +54,12 @@ sk doctor
 
 # Run full checks including live provider connectivity
 sk doctor --full
+
+# Check for updates and self-upgrade
+sk upgrade
+
+# See what would happen without actually upgrading
+sk upgrade --dry-run
 ```
 
 ## Shell Completions

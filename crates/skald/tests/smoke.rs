@@ -246,6 +246,20 @@ fn doctor_full_flag_in_help() {
 }
 
 #[test]
+fn upgrade_help() {
+    sk().args(["upgrade", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--dry-run"));
+}
+
+#[test]
+fn upgrade_dry_run_does_not_panic() {
+    // May succeed (update found) or fail (network) — just verify no panic
+    sk().args(["upgrade", "--dry-run"]).assert().code(predicate::in_iter([0, 1]));
+}
+
+#[test]
 fn commit_no_staged_changes_errors() {
     let tmp = tempfile::tempdir().unwrap();
     // Create a git repo with an initial commit but no staged changes
