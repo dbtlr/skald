@@ -1,6 +1,8 @@
 use std::process::Command;
 use std::time::{Duration, SystemTime};
 
+use tracing::{debug, info};
+
 use super::{Category, CheckResult};
 use crate::config;
 
@@ -19,12 +21,17 @@ fn check_command_available(cmd: &str, version_flag: &str) -> Option<String> {
 // ---------------------------------------------------------------------------
 
 pub fn environment_checks() -> Vec<CheckResult> {
+    debug!("running environment checks");
     vec![check_git(), check_git_repo(), check_gh()]
 }
 
 fn check_git() -> CheckResult {
+    debug!("checking git availability");
     match check_command_available("git", "--version") {
-        Some(version) => CheckResult::pass("git", &version).with_category(Category::Environment),
+        Some(version) => {
+            info!(version = %version, "git found");
+            CheckResult::pass("git", &version).with_category(Category::Environment)
+        }
         None => CheckResult::fail("git", "git is not installed or not in PATH")
             .with_category(Category::Environment)
             .with_suggestion("Install git: https://git-scm.com/downloads"),
@@ -60,11 +67,13 @@ fn check_gh() -> CheckResult {
 // ---------------------------------------------------------------------------
 
 pub fn config_checks(fix: bool) -> Vec<CheckResult> {
+    debug!(fix, "running configuration checks");
     vec![check_config_dir(fix), check_config_file(fix), check_project_config()]
 }
 
 fn check_config_dir(fix: bool) -> CheckResult {
     let dir = config::config_dir();
+    debug!(path = %dir.display(), "checking config directory");
 
     if dir.is_dir() {
         return CheckResult::pass("config_dir", &format!("{}", dir.display()))
@@ -155,6 +164,7 @@ fn check_project_config() -> CheckResult {
 // ---------------------------------------------------------------------------
 
 pub fn provider_checks(full: bool) -> Vec<CheckResult> {
+    debug!(full, "running provider checks");
     let mut results = vec![check_claude_cli()];
 
     if full {
@@ -230,6 +240,7 @@ fn check_claude_cli() -> CheckResult {
 // ---------------------------------------------------------------------------
 
 pub fn maintenance_checks(fix: bool) -> Vec<CheckResult> {
+    debug!(fix, "running maintenance checks");
     vec![check_log_dir(fix), check_stale_logs(fix)]
 }
 

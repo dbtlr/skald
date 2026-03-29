@@ -83,7 +83,8 @@ pub enum Command {
         action: Option<ConfigAction>,
     },
     /// List active aliases and their sources
-    Aliases {
+    #[command(alias = "aliases")]
+    Alias {
         /// Show which config file each alias comes from
         #[arg(long)]
         source: bool,

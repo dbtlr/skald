@@ -5,7 +5,9 @@ pub fn config_dir() -> PathBuf {
     if let Ok(xdg) = std::env::var("XDG_CONFIG_HOME") {
         return PathBuf::from(xdg).join("skald");
     }
-    dirs::config_dir().map(|d| d.join("skald")).unwrap_or_else(|| PathBuf::from(".skald"))
+    dirs::home_dir()
+        .map(|d| d.join(".config").join("skald"))
+        .unwrap_or_else(|| PathBuf::from(".skald"))
 }
 
 pub fn log_dir() -> PathBuf {

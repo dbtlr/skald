@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use crate::error::{Result, SkaldError};
 
-pub const BUILTIN_COMMANDS: &[&str] =
-    &["commit", "pr", "config", "aliases", "doctor", "completions"];
+pub const BUILTIN_COMMANDS: &[&str] = &["commit", "pr", "config", "alias", "doctor", "completions"];
 
 /// Validate all aliases in the map.
 ///

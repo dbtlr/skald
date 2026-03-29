@@ -102,13 +102,18 @@ fn config_init_existing_shows_info() {
 }
 
 #[test]
-fn aliases_exits_zero() {
-    sk().arg("aliases").assert().success();
+fn alias_exits_zero() {
+    sk().arg("alias").assert().success();
 }
 
 #[test]
-fn aliases_source_exits_zero() {
-    sk().args(["aliases", "--source"]).assert().success();
+fn alias_source_exits_zero() {
+    sk().args(["alias", "--source"]).assert().success();
+}
+
+#[test]
+fn aliases_backward_compat() {
+    sk().arg("aliases").assert().success();
 }
 
 #[test]

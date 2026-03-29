@@ -134,7 +134,7 @@ fn main() {
                 }
             }
         }
-        Command::Aliases { source } => match config_result {
+        Command::Alias { source } => match config_result {
             Ok(ref cfg) => cli::aliases::run_aliases(cfg, fmt, is_tty, source),
             Err(ref e) => {
                 cliclack::log::error(format!("Failed to load config: {e}")).ok();
