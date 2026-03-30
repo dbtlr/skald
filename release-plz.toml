@@ -1,6 +1,6 @@
 [workspace]
-# Don't publish to crates.io
-publish = false
+# Don't publish to crates.io — use git tags for version detection
+git_only = true
 # Create git tags when release PR is merged
 git_tag_enable = true
 # Don't create GitHub releases (cargo-dist handles this via the tag)
