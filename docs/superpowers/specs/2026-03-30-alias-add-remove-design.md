@@ -78,7 +78,7 @@ Use `serde_yaml_ng` to deserialize into `RawConfig`, mutate, and serialize back.
 
 - **`skald-core`** — New `config/writer.rs` module:
   - `pub fn add_alias(name: &str, expansion: &str, path: &Path, force: bool) -> Result<()>`
-  - `pub fn remove_alias(name: &str, path: &Path) -> Result<()>`
+  - `pub fn remove_alias(name: &str, path: &Path, scope: &str) -> Result<()>`
   - Handles the read-mutate-validate-write cycle.
 
 - **`skald` (CLI)** — Update existing files:
