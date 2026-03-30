@@ -3,6 +3,7 @@ use skald_core::output::OutputFormat;
 use skald_providers::config::{
     available_provider_names, get_provider_config, is_provider_available,
 };
+use skald_providers::models::{get_model_list, get_opencode_models, models_for_provider};
 
 fn build_config_template(provider: &str, model: Option<&str>) -> String {
     let model_section = match model {
@@ -59,6 +60,101 @@ fn write_config(provider: &str, model: Option<&str>) -> i32 {
 
     cliclack::log::success(format!("Config created at {}", path.display())).ok();
     0
+}
+
+fn pick_opencode_model() -> Option<String> {
+    let models = match get_opencode_models() {
+        Some(m) if !m.is_empty() => m,
+        _ => {
+            cliclack::log::info("Could not query OpenCode models.").ok();
+            let input: Result<String, _> = cliclack::input("Model (optional):")
+                .placeholder("Enter a model name or leave blank")
+                .required(false)
+                .interact();
+            return match input {
+                Ok(m) if !m.is_empty() => Some(m),
+                _ => None,
+            };
+        }
+    };
+
+    let mut select = cliclack::select("Select a model:");
+    for model in &models {
+        select = select.item(model.clone(), model, "");
+    }
+    select = select.item("__other__".to_string(), "Other (enter manually)", "");
+
+    match select.interact() {
+        Ok(choice) if choice == "__other__" => {
+            let input: Result<String, _> =
+                cliclack::input("Model:").placeholder("Enter model name").interact();
+            match input {
+                Ok(m) if !m.is_empty() => Some(m),
+                _ => None,
+            }
+        }
+        Ok(choice) => Some(choice),
+        Err(_) => None,
+    }
+}
+
+fn resolve_init_model(model_arg: Option<&str>, provider: &str, is_tty: bool) -> Option<String> {
+    if let Some(model) = model_arg {
+        return Some(model.to_string());
+    }
+
+    if !is_tty {
+        return None;
+    }
+
+    if provider == "opencode" {
+        return pick_opencode_model();
+    }
+
+    let model_list = get_model_list();
+    let provider_models = match models_for_provider(&model_list, provider) {
+        Some(m) => m,
+        None => {
+            // No models known — manual input
+            let input: Result<String, _> = cliclack::input("Model (optional):")
+                .placeholder("Enter a model name or leave blank for default")
+                .required(false)
+                .interact();
+            return match input {
+                Ok(m) if !m.is_empty() => Some(m),
+                _ => None,
+            };
+        }
+    };
+
+    let mut select = cliclack::select("Select a model:");
+    select = select.item(
+        provider_models.recommended.clone(),
+        &provider_models.recommended,
+        "recommended",
+    );
+    for model in &provider_models.models {
+        if model != &provider_models.recommended {
+            select = select.item(model.clone(), model, "");
+        }
+    }
+    select = select.item("__other__".to_string(), "Other (enter manually)", "");
+
+    match select.interact() {
+        Ok(choice) if choice == "__other__" => {
+            let input: Result<String, _> =
+                cliclack::input("Model:").placeholder("Enter model name").interact();
+            match input {
+                Ok(m) if !m.is_empty() => Some(m),
+                _ => None,
+            }
+        }
+        Ok(choice) => Some(choice),
+        Err(_) => {
+            cliclack::log::info("Skipped model selection.").ok();
+            None
+        }
+    }
 }
 
 pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: bool) -> i32 {
@@ -125,19 +221,10 @@ pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: boo
             Err(_) => return 1,
         };
 
-    // Interactive: prompt for model (optional)
-    let model_input: String = match cliclack::input("Model name (optional)")
-        .placeholder("leave blank for provider default")
-        .required(false)
-        .interact()
-    {
-        Ok(m) => m,
-        Err(_) => return 1,
-    };
+    // Interactive: prompt for model using picker
+    let model = resolve_init_model(model_arg, selected_provider, is_tty);
 
-    let model = if model_input.trim().is_empty() { None } else { Some(model_input.as_str()) };
-
-    write_config(selected_provider, model)
+    write_config(selected_provider, model.as_deref())
 }
 
 pub fn run_eject(project: bool, name: Option<&str>) -> i32 {

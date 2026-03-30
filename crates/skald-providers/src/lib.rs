@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 pub mod cli_provider;
 pub mod config;
+pub mod models;
 
 pub use cli_provider::CliProvider;
 pub use config::{
