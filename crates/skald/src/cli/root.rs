@@ -32,6 +32,14 @@ pub struct Cli {
     #[arg(long, value_enum, global = true)]
     pub format: Option<OutputFormat>,
 
+    /// AI provider to use
+    #[arg(long, global = true)]
+    pub provider: Option<String>,
+
+    /// Model to use for AI generation
+    #[arg(long, global = true)]
+    pub model: Option<String>,
+
     /// Run as if started in <path>
     #[arg(short = 'C', global = true, value_name = "PATH")]
     pub directory: Option<std::path::PathBuf>,
