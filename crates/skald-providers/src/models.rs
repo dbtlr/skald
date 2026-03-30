@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelList {
@@ -114,21 +114,14 @@ pub fn get_model_list() -> ModelList {
 /// Query `opencode models` at runtime and return the list of model IDs.
 /// Returns None if opencode is not available or the command fails.
 pub fn get_opencode_models() -> Option<Vec<String>> {
-    let output = std::process::Command::new("opencode")
-        .arg("models")
-        .output()
-        .ok()?;
+    let output = std::process::Command::new("opencode").arg("models").output().ok()?;
     if !output.status.success() {
         tracing::debug!("opencode models command failed");
         return None;
     }
     let stdout = String::from_utf8(output.stdout).ok()?;
-    let models: Vec<String> = stdout
-        .lines()
-        .map(str::trim)
-        .filter(|l| !l.is_empty())
-        .map(String::from)
-        .collect();
+    let models: Vec<String> =
+        stdout.lines().map(str::trim).filter(|l| !l.is_empty()).map(String::from).collect();
     if models.is_empty() {
         None
     } else {
@@ -151,10 +144,7 @@ mod tests {
     fn all_four_providers_present() {
         let list = fallback_models();
         for provider in &["claude", "codex", "gemini", "copilot"] {
-            assert!(
-                list.providers.contains_key(*provider),
-                "missing provider: {provider}"
-            );
+            assert!(list.providers.contains_key(*provider), "missing provider: {provider}");
         }
     }
 
@@ -162,19 +152,13 @@ mod tests {
     fn each_provider_has_non_empty_recommended_in_models_list() {
         let list = fallback_models();
         for (name, provider) in &list.providers {
-            assert!(
-                !provider.recommended.is_empty(),
-                "provider '{name}' has empty recommended"
-            );
+            assert!(!provider.recommended.is_empty(), "provider '{name}' has empty recommended");
             assert!(
                 provider.models.contains(&provider.recommended),
                 "provider '{name}' recommended '{}' not in models list",
                 provider.recommended
             );
-            assert!(
-                !provider.models.is_empty(),
-                "provider '{name}' has empty models list"
-            );
+            assert!(!provider.models.is_empty(), "provider '{name}' has empty models list");
         }
     }
 

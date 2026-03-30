@@ -86,9 +86,8 @@ fn pick_opencode_model() -> Option<String> {
 
     match select.interact() {
         Ok(choice) if choice == "__other__" => {
-            let input: Result<String, _> = cliclack::input("Model:")
-                .placeholder("Enter model name")
-                .interact();
+            let input: Result<String, _> =
+                cliclack::input("Model:").placeholder("Enter model name").interact();
             match input {
                 Ok(m) if !m.is_empty() => Some(m),
                 _ => None,
@@ -143,9 +142,8 @@ fn resolve_init_model(model_arg: Option<&str>, provider: &str, is_tty: bool) -> 
 
     match select.interact() {
         Ok(choice) if choice == "__other__" => {
-            let input: Result<String, _> = cliclack::input("Model:")
-                .placeholder("Enter model name")
-                .interact();
+            let input: Result<String, _> =
+                cliclack::input("Model:").placeholder("Enter model name").interact();
             match input {
                 Ok(m) if !m.is_empty() => Some(m),
                 _ => None,
