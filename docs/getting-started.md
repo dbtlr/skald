@@ -18,6 +18,21 @@ sk --version
 
 ## First Run
 
+Initialize your config and choose a provider interactively:
+
+```sh
+sk config init
+```
+
+This walks you through selecting a provider (Claude, Codex, Gemini, OpenCode, or Copilot) and writes a global config at `~/.config/skald/config.yaml`. You can also pass flags to skip the prompts:
+
+```sh
+sk config init --provider claude
+sk config init --provider codex --model gpt-4o
+```
+
+See [providers.md](providers.md) for the full list of supported providers and install links.
+
 Run `sk --help` to see all available commands:
 
 ```sh

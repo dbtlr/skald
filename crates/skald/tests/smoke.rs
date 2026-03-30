@@ -202,7 +202,10 @@ fn config_json_format() {
 #[test]
 fn config_init_creates_file() {
     let tmp = tempfile::tempdir().unwrap();
-    sk().args(["config", "init"]).env("XDG_CONFIG_HOME", tmp.path()).assert().success();
+    sk().args(["config", "init", "--provider", "claude"])
+        .env("XDG_CONFIG_HOME", tmp.path())
+        .assert()
+        .success();
     assert!(tmp.path().join("skald/config.yaml").exists());
 }
 
@@ -213,7 +216,7 @@ fn config_init_existing_shows_info() {
     std::fs::create_dir_all(&config_dir).unwrap();
     std::fs::write(config_dir.join("config.yaml"), "provider: test\n").unwrap();
 
-    sk().args(["config", "init"])
+    sk().args(["config", "init", "--provider", "claude"])
         .env("XDG_CONFIG_HOME", tmp.path())
         .assert()
         .success()
@@ -376,6 +379,33 @@ fn upgrade_help() {
 fn upgrade_dry_run_does_not_panic() {
     // May succeed (update found) or fail (network) — just verify no panic
     sk().args(["upgrade", "--dry-run"]).assert().code(predicate::in_iter([0, 1]));
+}
+
+#[test]
+fn commit_provider_flag_in_help() {
+    sk().args(["commit", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--provider"))
+        .stdout(predicate::str::contains("--model"));
+}
+
+#[test]
+fn pr_provider_flag_in_help() {
+    sk().args(["pr", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--provider"))
+        .stdout(predicate::str::contains("--model"));
+}
+
+#[test]
+fn config_init_provider_flag_in_help() {
+    sk().args(["config", "init", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--provider"))
+        .stdout(predicate::str::contains("--model"));
 }
 
 #[test]

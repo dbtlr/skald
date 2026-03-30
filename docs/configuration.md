@@ -33,8 +33,8 @@ Shows all resolved values with their sources (`default`, `global`, or `project`)
 ## Config Schema
 
 ```yaml
-# AI provider
-provider: claude-cli
+# AI provider (claude, codex, gemini, opencode, copilot)
+provider: claude
 
 # Language for generated messages
 language: English
@@ -50,11 +50,12 @@ vcs: git
 
 # Provider-specific settings
 providers:
-  claude-cli:
+  claude:
     model: claude-sonnet-4-20250514
-  anthropic-api:
-    api_key: $ANTHROPIC_API_KEY
-    model: claude-haiku-4-5
+  codex:
+    model: gpt-4o
+  gemini:
+    model: gemini-2.5-flash
 
 # Aliases (see docs/aliases.md)
 aliases:
@@ -90,7 +91,7 @@ Variables are expanded at config load time. A missing variable produces a clear 
 ## Example: Minimal Global Config
 
 ```yaml
-provider: claude-cli
+provider: claude
 language: English
 ```
 

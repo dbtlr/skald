@@ -59,6 +59,20 @@ fn main() {
     let fmt = cli.effective_format();
     let is_tty = std::io::stdout().is_terminal();
 
+    // Resolve provider name: --provider flag → config → "claude"
+    let provider_name = cli.provider.clone().unwrap_or_else(|| match config_result {
+        Ok(ref cfg) => cfg.provider.clone(),
+        Err(_) => "claude".to_string(),
+    });
+
+    // Resolve model: --model flag → config providers.<name>.model → None
+    let model = cli.model.clone().or_else(|| {
+        config_result
+            .as_ref()
+            .ok()
+            .and_then(|cfg| cfg.providers.get(&provider_name).and_then(|p| p.model.clone()))
+    });
+
     let code = match cli.command {
         Command::Completions { shell } => {
             cli::completions::run(shell);
@@ -99,6 +113,8 @@ fn main() {
                     extended,
                     format: fmt,
                     is_tty,
+                    provider_name: provider_name.clone(),
+                    model: model.clone(),
                 },
                 config,
             )
@@ -136,6 +152,8 @@ fn main() {
                     context,
                     format: fmt,
                     is_tty,
+                    provider_name: provider_name.clone(),
+                    model: model.clone(),
                 },
                 config,
             )
@@ -173,6 +191,8 @@ fn main() {
                     context,
                     format: fmt,
                     is_tty,
+                    provider_name: provider_name.clone(),
+                    model: model.clone(),
                 },
                 config,
             )
@@ -180,7 +200,9 @@ fn main() {
         Command::Config { action } => {
             let action = action.unwrap_or(ConfigAction::Show);
             match action {
-                ConfigAction::Init => cli::config::run_init(),
+                ConfigAction::Init { provider, model } => {
+                    cli::config::run_init(provider.as_deref(), model.as_deref(), is_tty)
+                }
                 ConfigAction::Show => match config_result {
                     Ok(ref cfg) => cli::config::run_show(cfg, fmt, is_tty),
                     Err(ref e) => {

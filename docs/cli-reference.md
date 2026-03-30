@@ -22,6 +22,8 @@ These flags are available on all commands:
 | `--quiet` | `-q` | Suppress all output except errors and final results |
 | `--no-color` | | Disable color output. Also triggered by `NO_COLOR` env var |
 | `--format` | | Output format: `plain`, `table`, `json` |
+| `--provider` | | AI provider to use for this command (e.g. `claude`, `codex`, `gemini`) |
+| `--model` | | Model name to pass to the provider (e.g. `claude-haiku-4-5`, `gpt-4o`) |
 | `--version` | `-V` | Print version |
 | `--help` | `-h` | Print help |
 

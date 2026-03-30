@@ -3,8 +3,7 @@ use std::path::PathBuf;
 use skald_core::config::schema::ResolvedConfig;
 use skald_core::output::OutputFormat;
 use skald_core::prompts::{PromptContext, render_prompt, resolve_template};
-use skald_providers::claude_cli::ClaudeCliProvider;
-use skald_providers::{CommitContext, Provider};
+use skald_providers::{CliProvider, CommitContext, Provider, get_provider_config};
 use skald_vcs::git::GitAdapter;
 use skald_vcs::{DiffOptions, StageMode, VcsAdapter};
 
@@ -22,6 +21,8 @@ pub struct CommitOptions {
     pub extended: bool,
     pub format: OutputFormat,
     pub is_tty: bool,
+    pub provider_name: String,
+    pub model: Option<String>,
 }
 
 pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
@@ -132,8 +133,19 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     };
 
     // 12. Create provider
-    let model = config.providers.get(&config.provider).and_then(|p| p.model.clone());
-    let provider = ClaudeCliProvider::new(model);
+    let provider_config = match get_provider_config(&opts.provider_name) {
+        Some(c) => c,
+        None => {
+            cliclack::log::error(format!(
+                "Unknown provider '{}'. Available: {}",
+                opts.provider_name,
+                skald_providers::available_provider_names().join(", ")
+            ))
+            .ok();
+            return 1;
+        }
+    };
+    let provider = CliProvider::new(provider_config, opts.model.clone());
 
     // 13. Show spinner, call provider
     let count = if opts.auto { 1 } else { opts.count };
@@ -344,7 +356,7 @@ fn extract_files_from_stat(stat: &str) -> String {
 struct InteractiveState<'a> {
     messages: Vec<String>,
     git: &'a GitAdapter,
-    provider: &'a ClaudeCliProvider,
+    provider: &'a CliProvider,
     rt: &'a tokio::runtime::Runtime,
     diff: &'a str,
     diff_stat: &'a str,
@@ -598,7 +610,7 @@ fn generate_body(
     context: Option<&str>,
     language: &str,
     diff: &str,
-    provider: &ClaudeCliProvider,
+    provider: &CliProvider,
     rt: &tokio::runtime::Runtime,
     is_tty: bool,
 ) -> Option<String> {

@@ -1,6 +1,12 @@
 use async_trait::async_trait;
 
-pub mod claude_cli;
+pub mod cli_provider;
+pub mod config;
+
+pub use cli_provider::CliProvider;
+pub use config::{
+    CliProviderConfig, available_provider_names, get_provider_config, is_provider_available,
+};
 
 #[derive(Debug, Clone)]
 pub struct CommitContext {

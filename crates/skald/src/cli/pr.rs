@@ -2,8 +2,7 @@ use skald_core::config::schema::ResolvedConfig;
 use skald_core::output::OutputFormat;
 use skald_core::prompts::{PromptContext, mock_prompt_context, render_prompt, resolve_template};
 use skald_platform::{CreatePrRequest, PlatformAdapter, detect_platform};
-use skald_providers::claude_cli::ClaudeCliProvider;
-use skald_providers::{PrContent, PrContext, Provider};
+use skald_providers::{CliProvider, PrContent, PrContext, Provider, get_provider_config};
 use skald_vcs::git::GitAdapter;
 use skald_vcs::{DiffOptions, DiffResult, VcsAdapter};
 
@@ -20,6 +19,8 @@ pub struct PrOptions {
     pub context: Option<String>,
     pub format: OutputFormat,
     pub is_tty: bool,
+    pub provider_name: String,
+    pub model: Option<String>,
 }
 
 /// Determine the source ref for diff/log commands based on push flag and upstream state.
@@ -44,6 +45,8 @@ fn generate_pr_contents(
     count: usize,
     config: &ResolvedConfig,
     is_tty: bool,
+    provider_name: &str,
+    model: Option<String>,
 ) -> Result<Vec<PrContent>, i32> {
     let prompt_ctx = PromptContext::new()
         .set("branch", branch)
@@ -82,8 +85,19 @@ fn generate_pr_contents(
         extra_context: context.map(|s| s.to_string()),
     };
 
-    let model = config.providers.get(&config.provider).and_then(|p| p.model.clone());
-    let provider = ClaudeCliProvider::new(model);
+    let provider_config = match get_provider_config(provider_name) {
+        Some(c) => c,
+        None => {
+            cliclack::log::error(format!(
+                "Unknown provider '{}'. Available: {}",
+                provider_name,
+                skald_providers::available_provider_names().join(", ")
+            ))
+            .ok();
+            return Err(1);
+        }
+    };
+    let provider = CliProvider::new(provider_config, model);
 
     let sp = if is_tty {
         let s = cliclack::spinner();
@@ -204,6 +218,8 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         count,
         config,
         opts.is_tty,
+        &opts.provider_name,
+        opts.model.clone(),
     ) {
         Ok(c) => c,
         Err(code) => return code,
@@ -350,6 +366,8 @@ fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i3
         count,
         config,
         opts.is_tty,
+        &opts.provider_name,
+        opts.model.clone(),
     ) {
         Ok(c) => c,
         Err(code) => return code,
@@ -446,6 +464,8 @@ fn run_interactive_pr(
                     opts.count,
                     config,
                     opts.is_tty,
+                    &opts.provider_name,
+                    opts.model.clone(),
                 ) {
                     contents = new_contents;
                 }
@@ -607,6 +627,8 @@ fn run_confirmation_menu(
                     opts.count,
                     config,
                     opts.is_tty,
+                    &opts.provider_name,
+                    opts.model.clone(),
                 ) {
                     *contents = new_contents;
                 }
@@ -691,6 +713,8 @@ fn handle_context_regeneration(
     count: usize,
     config: &ResolvedConfig,
     is_tty: bool,
+    provider_name: &str,
+    model: Option<String>,
 ) -> Option<Vec<PrContent>> {
     let input: Result<String, _> = cliclack::input("Add context for regeneration:")
         .placeholder("e.g. this PR fixes the auth redirect bug")
@@ -723,6 +747,8 @@ fn handle_context_regeneration(
         count,
         config,
         is_tty,
+        provider_name,
+        model,
     ) {
         Ok(new_contents) => {
             cliclack::log::success("Content regenerated with new context.").ok();
