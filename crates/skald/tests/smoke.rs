@@ -408,6 +408,157 @@ fn config_init_provider_flag_in_help() {
         .stdout(predicate::str::contains("--model"));
 }
 
+// --- integrations ---
+
+/// Set XDG_CONFIG_HOME to a writable temp path so tracing-appender can create log files
+/// in sandboxed/CI environments.
+fn sk_with_cfg(cfg_tmp: &tempfile::TempDir) -> assert_cmd::Command {
+    let mut cmd = sk();
+    cmd.env("XDG_CONFIG_HOME", cfg_tmp.path());
+    cmd
+}
+
+#[test]
+fn integrations_list_shows_options() {
+    let cfg = tempfile::tempdir().unwrap();
+    sk_with_cfg(&cfg).arg("integrations").assert().success();
+}
+
+#[test]
+fn integrations_help() {
+    sk().args(["integrations", "--help"]).assert().success();
+}
+
+#[test]
+fn integrations_worktrunk_outputs_toml() {
+    let cfg = tempfile::tempdir().unwrap();
+    let output = sk_with_cfg(&cfg).args(["integrations", "worktrunk"]).output().unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "expected success");
+    assert!(stdout.contains("[tools.skald]"), "expected [tools.skald] in stdout, got: {stdout}");
+}
+
+#[test]
+fn integrations_lazygit_outputs_yaml() {
+    let cfg = tempfile::tempdir().unwrap();
+    let output = sk_with_cfg(&cfg).args(["integrations", "lazygit"]).output().unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "expected success");
+    assert!(stdout.contains("customCommands"), "expected customCommands in stdout, got: {stdout}");
+}
+
+#[test]
+fn integrations_fugitive_outputs_vim() {
+    let cfg = tempfile::tempdir().unwrap();
+    let output = sk_with_cfg(&cfg).args(["integrations", "fugitive"]).output().unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "expected success");
+    assert!(stdout.contains("nnoremap"), "expected nnoremap in stdout, got: {stdout}");
+}
+
+#[test]
+fn integrations_hook_outputs_script() {
+    let cfg = tempfile::tempdir().unwrap();
+    let output = sk_with_cfg(&cfg).args(["integrations", "hook"]).output().unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "expected success");
+    assert!(stdout.contains("#!/bin/sh"), "expected #!/bin/sh in stdout, got: {stdout}");
+}
+
+#[test]
+fn integrations_hook_install_not_in_repo() {
+    let tmp = tempfile::tempdir().unwrap();
+    let cfg = tempfile::tempdir().unwrap();
+    sk_with_cfg(&cfg)
+        .args(["integrations", "hook", "--install"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("no .git directory found"));
+}
+
+#[test]
+fn integrations_hook_install_creates_file() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let tmp = tempfile::tempdir().unwrap();
+    let cfg = tempfile::tempdir().unwrap();
+    let run = |args: &[&str]| {
+        std::process::Command::new("git").args(args).current_dir(tmp.path()).output().unwrap()
+    };
+
+    run(&["init"]);
+    run(&["config", "user.email", "test@test.com"]);
+    run(&["config", "user.name", "Test"]);
+
+    sk_with_cfg(&cfg)
+        .args(["integrations", "hook", "--install"])
+        .current_dir(tmp.path())
+        .assert()
+        .success();
+
+    let hook_path = tmp.path().join(".git/hooks/prepare-commit-msg");
+    assert!(hook_path.exists(), "hook file should exist");
+    let perms = std::fs::metadata(&hook_path).unwrap().permissions();
+    assert!(perms.mode() & 0o111 != 0, "hook file should be executable");
+}
+
+#[test]
+fn integrations_hook_install_no_overwrite() {
+    let tmp = tempfile::tempdir().unwrap();
+    let cfg = tempfile::tempdir().unwrap();
+    let run = |args: &[&str]| {
+        std::process::Command::new("git").args(args).current_dir(tmp.path()).output().unwrap()
+    };
+
+    run(&["init"]);
+    run(&["config", "user.email", "test@test.com"]);
+    run(&["config", "user.name", "Test"]);
+
+    // Pre-create the hook
+    let hooks_dir = tmp.path().join(".git/hooks");
+    std::fs::create_dir_all(&hooks_dir).unwrap();
+    std::fs::write(hooks_dir.join("prepare-commit-msg"), "#!/bin/sh\n# existing\n").unwrap();
+
+    sk_with_cfg(&cfg)
+        .args(["integrations", "hook", "--install"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("already exists"));
+}
+
+#[test]
+fn integrations_hook_install_force_overwrites() {
+    let tmp = tempfile::tempdir().unwrap();
+    let cfg = tempfile::tempdir().unwrap();
+    let run = |args: &[&str]| {
+        std::process::Command::new("git").args(args).current_dir(tmp.path()).output().unwrap()
+    };
+
+    run(&["init"]);
+    run(&["config", "user.email", "test@test.com"]);
+    run(&["config", "user.name", "Test"]);
+
+    // Pre-create the hook
+    let hooks_dir = tmp.path().join(".git/hooks");
+    std::fs::create_dir_all(&hooks_dir).unwrap();
+    std::fs::write(hooks_dir.join("prepare-commit-msg"), "#!/bin/sh\n# existing\n").unwrap();
+
+    sk_with_cfg(&cfg)
+        .args(["integrations", "hook", "--install", "--force"])
+        .current_dir(tmp.path())
+        .assert()
+        .success();
+
+    let hook_contents =
+        std::fs::read_to_string(tmp.path().join(".git/hooks/prepare-commit-msg")).unwrap();
+    assert!(hook_contents.contains("#!/bin/sh"), "hook should contain skald script");
+    assert!(!hook_contents.contains("# existing"), "hook should be overwritten");
+}
+
+// --- end integrations ---
+
 #[test]
 fn commit_no_staged_changes_errors() {
     let tmp = tempfile::tempdir().unwrap();

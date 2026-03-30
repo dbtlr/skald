@@ -15,6 +15,7 @@ AI-powered git workflow CLI. Generates commit messages, PR titles, and PR descri
 - **Multi-provider** — Claude, Codex, Gemini, OpenCode, and Copilot CLI support
 - **Multi-platform** — GitHub and GitLab support with `sk pr` / `sk mr`
 - **Shell completions** — bash, zsh, and fish
+- **Tool integrations** — Config snippets for worktrunk, lazygit, fugitive, and git hooks
 
 ## Install
 
@@ -116,6 +117,7 @@ Run `sk aliases` to see active aliases and their sources.
 - [Platforms](docs/platforms.md) — GitHub setup and platform configuration
 - [Providers](docs/providers.md) — supported AI providers, configuration, and CLI overrides
 - [Doctor](docs/doctor.md) — environment validation, auto-fix, diagnostics
+- [Integrations](docs/integrations.md) — worktrunk, lazygit, fugitive, git hooks
 
 ## License
 

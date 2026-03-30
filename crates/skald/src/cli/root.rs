@@ -182,6 +182,30 @@ pub enum Command {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+    /// Output integration config snippets for external tools
+    Integrations {
+        #[command(subcommand)]
+        target: Option<IntegrationTarget>,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum IntegrationTarget {
+    /// Worktrunk commit message config
+    Worktrunk,
+    /// Lazygit custom command config
+    Lazygit,
+    /// Vim-fugitive keybinding config
+    Fugitive,
+    /// Git prepare-commit-msg hook
+    Hook {
+        /// Install the hook to .git/hooks/
+        #[arg(long)]
+        install: bool,
+        /// Overwrite existing hook file
+        #[arg(long)]
+        force: bool,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]

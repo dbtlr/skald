@@ -11,6 +11,7 @@
 | `sk aliases` | Stub (M1) | List active aliases and their sources |
 | `sk doctor` | Stub (M3) | Validate environment, config, and provider connectivity |
 | `sk completions <shell>` | Working | Generate shell completions (bash, zsh, fish) |
+| `sk integrations` | Working | Output integration config snippets |
 
 ## Global Flags
 
