@@ -12,6 +12,7 @@ AI-powered git workflow CLI. Generates commit messages, PR titles, and PR descri
 - **Prompt templates** — 5 built-in Tera templates, fully customizable with `sk config eject`
 - **Config & aliases** — layered YAML config (global + project), composable flag shortcuts
 - **Doctor** — environment, config, provider, and maintenance checks with `--fix` and `--full`
+- **Multi-provider** — Claude, Codex, Gemini, OpenCode, and Copilot CLI support
 - **Multi-platform** — GitHub and GitLab support with `sk pr` / `sk mr`
 - **Shell completions** — bash, zsh, and fish
 
@@ -89,7 +90,7 @@ sk completions fish >  ~/.config/fish/completions/sk.fish
 Skald uses layered YAML config: global (`~/.config/skald/config.yaml`) merged with project (`.skaldrc.yaml`). Initialize with `sk config init`.
 
 ```yaml
-provider: claude-cli
+provider: claude
 language: English
 commit:
   num_candidates: 3
@@ -113,6 +114,7 @@ Run `sk aliases` to see active aliases and their sources.
 - [Commit](docs/commit.md) — commit message generation, modes, and options
 - [PR](docs/pr.md) — PR title/description generation and creation
 - [Platforms](docs/platforms.md) — GitHub setup and platform configuration
+- [Providers](docs/providers.md) — supported AI providers, configuration, and CLI overrides
 - [Doctor](docs/doctor.md) — environment validation, auto-fix, diagnostics
 
 ## License
