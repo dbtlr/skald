@@ -14,7 +14,7 @@ pub struct ProviderModels {
     pub models: Vec<String>,
 }
 
-const FALLBACK_MODELS_JSON: &str = include_str!("../../../models.json");
+const FALLBACK_MODELS_JSON: &str = include_str!("../models.json");
 const MODELS_URL: &str = "https://raw.githubusercontent.com/dbtlr/skald/main/models.json";
 const FETCH_TIMEOUT: u64 = 3;
 const CACHE_TTL: Duration = Duration::from_secs(86400);

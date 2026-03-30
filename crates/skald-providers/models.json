@@ -1,0 +1,38 @@
+{
+  "updated": "2026-03-29",
+  "providers": {
+    "claude": {
+      "recommended": "claude-haiku-4-5",
+      "models": [
+        "claude-haiku-4-5",
+        "claude-sonnet-4-6",
+        "claude-opus-4-6"
+      ]
+    },
+    "codex": {
+      "recommended": "gpt-5.4-mini",
+      "models": [
+        "gpt-5.4-mini",
+        "gpt-5.4",
+        "gpt-5.3-codex",
+        "gpt-5.3-codex-spark"
+      ]
+    },
+    "gemini": {
+      "recommended": "gemini-2.0-flash",
+      "models": [
+        "gemini-2.0-flash",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash"
+      ]
+    },
+    "copilot": {
+      "recommended": "gpt-5.4-mini",
+      "models": [
+        "gpt-5.4-mini",
+        "gpt-5.4",
+        "claude-sonnet-4-6"
+      ]
+    }
+  }
+}
