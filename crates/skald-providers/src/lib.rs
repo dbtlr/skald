@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 pub mod claude_cli;
+pub mod config;
 
 #[derive(Debug, Clone)]
 pub struct CommitContext {
