@@ -96,11 +96,7 @@ fn resolve_git_dir() -> Option<std::path::PathBuf> {
     }
     // Worktree: .git is a file with "gitdir: <path>"
     let content = fs::read_to_string(git_path).ok()?;
-    let git_dir = content
-        .lines()
-        .find_map(|l| l.strip_prefix("gitdir:"))?
-        .trim()
-        .to_string();
+    let git_dir = content.lines().find_map(|l| l.strip_prefix("gitdir:"))?.trim().to_string();
     // The gitdir in a worktree points to the worktree-specific dir.
     // We want the common hooks dir at the main repo, which is ../.. from the worktree gitdir.
     let worktree_git_dir = std::path::PathBuf::from(&git_dir);
@@ -110,10 +106,7 @@ fn resolve_git_dir() -> Option<std::path::PathBuf> {
         return Some(worktree_git_dir);
     }
     // Fallback: try parent.parent (common git dir)
-    worktree_git_dir
-        .parent()
-        .and_then(|p| p.parent())
-        .map(|p| p.to_path_buf())
+    worktree_git_dir.parent().and_then(|p| p.parent()).map(|p| p.to_path_buf())
 }
 
 pub fn run_hook_install(force: bool) -> i32 {
@@ -132,19 +125,16 @@ pub fn run_hook_install(force: bool) -> i32 {
     };
 
     let hooks_dir = git_dir.join("hooks");
-    if !hooks_dir.exists() {
-        if let Err(e) = fs::create_dir_all(&hooks_dir) {
-            eprintln!("error: could not create .git/hooks/: {e}");
-            return 1;
-        }
+    if !hooks_dir.exists()
+        && let Err(e) = fs::create_dir_all(&hooks_dir)
+    {
+        eprintln!("error: could not create .git/hooks/: {e}");
+        return 1;
     }
 
     let hook_path = hooks_dir.join("prepare-commit-msg");
     if hook_path.exists() && !force {
-        eprintln!(
-            "error: hook already exists at {}",
-            hook_path.display()
-        );
+        eprintln!("error: hook already exists at {}", hook_path.display());
         eprintln!("hint: use --force to overwrite the existing hook");
         return 1;
     }
