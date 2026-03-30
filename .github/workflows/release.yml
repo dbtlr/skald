@@ -32,15 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set version from tag
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          echo "Setting version to $VERSION"
-          # Portable in-place sed: write to temp, move over original
-          sed "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml > Cargo.toml.tmp
-          mv Cargo.toml.tmp Cargo.toml
-        shell: bash
-
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -62,6 +53,7 @@ jobs:
           cd target/${{ matrix.target }}/release
           tar czf ../../../sk-${{ matrix.target }}.tar.gz sk
           cd ../../..
+          sha256sum sk-${{ matrix.target }}.tar.gz > sk-${{ matrix.target }}.tar.gz.sha256
 
       - name: Package (windows)
         if: runner.os == 'Windows'
@@ -74,7 +66,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: sk-${{ matrix.target }}
-          path: sk-${{ matrix.target }}.*
+          path: |
+            sk-${{ matrix.target }}.*
 
   release:
     name: Release

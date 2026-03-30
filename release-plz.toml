@@ -1,0 +1,13 @@
+[workspace]
+# Don't publish to crates.io
+publish = false
+# Create git tags when release PR is merged
+git_tag_enable = true
+# Don't create GitHub releases (cargo-dist handles this via the tag)
+git_release_enable = false
+# Tag format
+git_tag_name = "v{{ version }}"
+
+[changelog]
+# Protect breaking change commits from being excluded
+protect_breaking_commits = true

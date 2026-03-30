@@ -25,15 +25,9 @@ AI-powered git workflow CLI. Generates commit messages, PR titles, and PR descri
 cargo install --path crates/skald
 ```
 
-### Install script
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/dbtlr/skald/main/scripts/install.sh | bash
-```
-
 ### GitHub Releases
 
-Pre-built binaries for Linux, macOS, and Windows are available on the [Releases page](https://github.com/dbtlr/skald/releases).
+Pre-built binaries for Linux, macOS, and Windows are available on the [Releases page](https://github.com/dbtlr/skald/releases). Download the archive for your platform and extract the `sk` binary.
 
 ## Quick Start
 
