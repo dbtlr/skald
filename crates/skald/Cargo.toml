@@ -3,6 +3,7 @@ name = "skald"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish = false
 repository.workspace = true
 description = "AI-powered git workflow CLI"
 default-run = "sk"

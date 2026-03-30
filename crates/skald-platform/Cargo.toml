@@ -3,6 +3,7 @@ name = "skald-platform"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish = false
 repository.workspace = true
 description = "Platform adapter trait and implementations for skald"
 
