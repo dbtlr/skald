@@ -1,0 +1,42 @@
+name: Update Models
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 9 * * 1'
+
+jobs:
+  update:
+    name: Update model list
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update models.json
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/update-models.sh
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet models.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "chore: update models.json"
+          body: "Automated update of available models from provider APIs."
+          branch: update-models
+          commit-message: "chore: update models.json"
