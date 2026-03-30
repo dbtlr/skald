@@ -179,7 +179,14 @@ pub enum Command {
 #[derive(clap::Subcommand, Debug)]
 pub enum ConfigAction {
     /// Create a default global config file
-    Init,
+    Init {
+        /// Initialize with a specific provider
+        #[arg(long)]
+        provider: Option<String>,
+        /// Initialize with a specific model
+        #[arg(long)]
+        model: Option<String>,
+    },
     /// Display the resolved configuration
     Show,
     /// Eject prompt templates for customization

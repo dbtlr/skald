@@ -94,7 +94,7 @@ fn resolve(merged: &RawConfig, global: &RawConfig, project: &Option<RawConfig>) 
         &merged.provider,
         &global.provider,
         project.as_ref().and_then(|p| p.provider.as_ref()),
-        "claude-cli",
+        "claude",
         &mut sources,
     );
     let language = resolve_field(
@@ -253,7 +253,7 @@ mod tests {
         let merged = RawConfig::default();
         let global = RawConfig::default();
         let resolved = resolve(&merged, &global, &None);
-        assert_eq!(resolved.provider, "claude-cli");
+        assert_eq!(resolved.provider, "claude");
         assert_eq!(resolved.language, "English");
         assert_eq!(resolved.pr_target, "main");
         assert_eq!(resolved.platform, "github");

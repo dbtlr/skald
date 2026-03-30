@@ -1,34 +1,40 @@
 use skald_core::config::{ResolvedConfig, global_config_path};
 use skald_core::output::OutputFormat;
+use skald_providers::config::{available_provider_names, get_provider_config, is_provider_available};
 
-const DEFAULT_CONFIG_TEMPLATE: &str = r#"# Skald configuration
+fn build_config_template(provider: &str, model: Option<&str>) -> String {
+    let model_section = match model {
+        Some(m) => format!(
+            "\n# Provider-specific settings\nproviders:\n  {provider}:\n    model: {m}\n"
+        ),
+        None => format!(
+            "\n# Provider-specific settings\n# providers:\n#   {provider}:\n#     model: <model-name>\n"
+        ),
+    };
+
+    format!(
+        r#"# Skald configuration
 # See: https://github.com/dbtlr/skald/docs/configuration.md
 
-# AI provider (default: claude-cli)
-# provider: claude-cli
+# AI provider (default: claude)
+provider: {provider}
 
 # Language for generated messages (default: English)
 # language: English
 
 # Default PR target branch (default: main)
 # pr_target: main
-
-# Provider-specific settings
-# providers:
-#   claude-cli:
-#     model: claude-sonnet-4-20250514
-#   anthropic-api:
-#     api_key: $ANTHROPIC_API_KEY
-#     model: claude-haiku-4-5
-
+{model_section}
 # Aliases — composable flag shortcuts
 # aliases:
 #   ci: "commit -n 5"
 #   ca: "commit --auto -A"
 #   fix: "commit --auto -a --context 'bug fix'"
-"#;
+"#
+    )
+}
 
-pub fn run_init() -> i32 {
+fn write_config(provider: &str, model: Option<&str>) -> i32 {
     let path = global_config_path();
 
     if path.exists() {
@@ -43,13 +49,95 @@ pub fn run_init() -> i32 {
         return 1;
     }
 
-    if let Err(e) = std::fs::write(&path, DEFAULT_CONFIG_TEMPLATE) {
+    let content = build_config_template(provider, model);
+    if let Err(e) = std::fs::write(&path, &content) {
         cliclack::log::error(format!("Failed to write config: {e}")).ok();
         return 1;
     }
 
     cliclack::log::success(format!("Config created at {}", path.display())).ok();
     0
+}
+
+pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: bool) -> i32 {
+    // With --provider flag: validate, check availability, write directly
+    if let Some(provider) = provider_arg {
+        if get_provider_config(provider).is_none() {
+            let known = available_provider_names().join(", ");
+            cliclack::log::error(format!(
+                "Unknown provider '{provider}'. Known providers: {known}"
+            ))
+            .ok();
+            return 1;
+        }
+        if !is_provider_available(provider) {
+            cliclack::log::warning(format!(
+                "Provider '{provider}' binary not found in PATH. Config will be written anyway."
+            ))
+            .ok();
+        }
+        return write_config(provider, model_arg);
+    }
+
+    let all_names = available_provider_names();
+    let found: Vec<&str> =
+        all_names.iter().copied().filter(|name| is_provider_available(name)).collect();
+
+    // Non-interactive: show detection results and suggest command
+    if !is_tty {
+        eprintln!("error: No provider specified. Skald needs an AI provider to work.");
+        eprintln!();
+        eprintln!("Available providers detected:");
+        for name in &all_names {
+            let marker = if found.contains(name) { "✓" } else { "✗" };
+            let status = if found.contains(name) { "found" } else { "not found" };
+            eprintln!("  {marker} {name:<12} ({status})");
+        }
+        eprintln!();
+        if let Some(first) = found.first() {
+            eprintln!("Run: sk config init --provider {first}");
+        } else {
+            eprintln!("No providers found. Install one to get started.");
+            eprintln!("  claude: https://claude.ai/download");
+            eprintln!("  codex:  https://github.com/openai/codex");
+            eprintln!("  gemini: https://github.com/google-gemini/gemini-cli");
+        }
+        return 1;
+    }
+
+    // Interactive: no providers available
+    if found.is_empty() {
+        cliclack::log::error(
+            "No AI providers found in PATH. Install one to get started:\n  claude: https://claude.ai/download\n  codex:  https://github.com/openai/codex\n  gemini: https://github.com/google-gemini/gemini-cli"
+        ).ok();
+        return 1;
+    }
+
+    // Interactive: select provider
+    let provider_options: Vec<(&str, &str, &str)> =
+        found.iter().map(|&name| (name, name, "")).collect();
+
+    let selected_provider = match cliclack::select("Select an AI provider")
+        .items(&provider_options)
+        .interact()
+    {
+        Ok(p) => p,
+        Err(_) => return 1,
+    };
+
+    // Interactive: prompt for model (optional)
+    let model_input: String = match cliclack::input("Model name (optional)")
+        .placeholder("leave blank for provider default")
+        .required(false)
+        .interact()
+    {
+        Ok(m) => m,
+        Err(_) => return 1,
+    };
+
+    let model = if model_input.trim().is_empty() { None } else { Some(model_input.as_str()) };
+
+    write_config(selected_provider, model)
 }
 
 pub fn run_eject(project: bool, name: Option<&str>) -> i32 {

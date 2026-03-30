@@ -180,7 +180,9 @@ fn main() {
         Command::Config { action } => {
             let action = action.unwrap_or(ConfigAction::Show);
             match action {
-                ConfigAction::Init => cli::config::run_init(),
+                ConfigAction::Init { provider, model } => {
+                    cli::config::run_init(provider.as_deref(), model.as_deref(), is_tty)
+                }
                 ConfigAction::Show => match config_result {
                     Ok(ref cfg) => cli::config::run_show(cfg, fmt, is_tty),
                     Err(ref e) => {
