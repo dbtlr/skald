@@ -35,6 +35,12 @@ pub enum SkaldError {
     #[error("Alias '{name}' does not start with a known command")]
     AliasInvalidCommand { name: String },
 
+    #[error("Alias '{name}' already exists (expands to \"{expansion}\"). Use --force to overwrite.")]
+    AliasAlreadyExists { name: String, expansion: String },
+
+    #[error("Alias '{name}' not found in {scope} config.")]
+    AliasNotFound { name: String, scope: String },
+
     #[error("Prompt template '{name}' not found")]
     PromptNotFound { name: String },
 
@@ -74,6 +80,12 @@ impl SkaldError {
             Self::AliasInvalidCommand { .. } => Some(
                 "Alias expansions must start with a built-in command: commit, pr, config, aliases, doctor, or completions.",
             ),
+            Self::AliasAlreadyExists { .. } => {
+                Some("Use --force to replace the existing alias.")
+            }
+            Self::AliasNotFound { .. } => {
+                Some("Run `sk alias list` to see active aliases.")
+            }
             Self::PromptNotFound { .. } => Some(
                 "Check template name. Available: system, commit-title, commit-body, pr-title, pr-description",
             ),
@@ -97,6 +109,8 @@ impl SkaldError {
             | Self::AliasRecursive { .. }
             | Self::AliasShadowsBuiltin { .. }
             | Self::AliasInvalidCommand { .. }
+            | Self::AliasAlreadyExists { .. }
+            | Self::AliasNotFound { .. }
             | Self::PromptNotFound { .. }
             | Self::PromptRender { .. }
             | Self::PromptEject { .. } => 1,
