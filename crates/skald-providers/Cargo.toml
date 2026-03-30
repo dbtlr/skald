@@ -8,6 +8,8 @@ description = "AI provider trait and implementations for skald"
 
 [dependencies]
 async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tempfile = "3"
 thiserror = "2"
 tokio = { version = "1", features = ["process"] }
