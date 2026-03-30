@@ -1634,8 +1634,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
 
 [[package]]
-name = "skald"
-version = "0.1.0"
+name = "skald-cli"
+version = "0.3.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -1660,7 +1660,7 @@ dependencies = [
 
 [[package]]
 name = "skald-core"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "dirs",
@@ -1679,7 +1679,7 @@ dependencies = [
 
 [[package]]
 name = "skald-platform"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1689,7 +1689,7 @@ dependencies = [
 
 [[package]]
 name = "skald-providers"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "dirs",
@@ -1704,7 +1704,7 @@ dependencies = [
 
 [[package]]
 name = "skald-vcs"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "tempfile",
  "thiserror 2.0.18",
