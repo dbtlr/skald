@@ -13,6 +13,7 @@ changelog_update = true
 # Only release the binary crate — skip library crates
 [[package]]
 name = "skald"
+publish = false
 # Include commits from all workspace crates in changelog and change detection
 changelog_include = ["skald-core", "skald-providers", "skald-vcs", "skald-platform"]
 
