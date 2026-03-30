@@ -49,13 +49,7 @@ static COPILOT: CliProviderConfig = CliProviderConfig {
     model_flag: "--model",
 };
 
-static ALL_PROVIDERS: &[&CliProviderConfig] = &[
-    &CLAUDE,
-    &CODEX,
-    &GEMINI,
-    &OPENCODE,
-    &COPILOT,
-];
+static ALL_PROVIDERS: &[&CliProviderConfig] = &[&CLAUDE, &CODEX, &GEMINI, &OPENCODE, &COPILOT];
 
 pub fn get_provider_config(name: &str) -> Option<&'static CliProviderConfig> {
     ALL_PROVIDERS.iter().copied().find(|p| p.name == name)
@@ -83,10 +77,7 @@ mod tests {
     #[test]
     fn all_five_providers_resolve() {
         for name in ["claude", "codex", "gemini", "opencode", "copilot"] {
-            assert!(
-                get_provider_config(name).is_some(),
-                "provider '{name}' should resolve"
-            );
+            assert!(get_provider_config(name).is_some(), "provider '{name}' should resolve");
         }
     }
 

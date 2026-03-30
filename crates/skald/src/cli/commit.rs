@@ -140,7 +140,8 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
                 "Unknown provider '{}'. Available: {}",
                 opts.provider_name,
                 skald_providers::available_provider_names().join(", ")
-            )).ok();
+            ))
+            .ok();
             return 1;
         }
     };

@@ -1,12 +1,14 @@
 use skald_core::config::{ResolvedConfig, global_config_path};
 use skald_core::output::OutputFormat;
-use skald_providers::config::{available_provider_names, get_provider_config, is_provider_available};
+use skald_providers::config::{
+    available_provider_names, get_provider_config, is_provider_available,
+};
 
 fn build_config_template(provider: &str, model: Option<&str>) -> String {
     let model_section = match model {
-        Some(m) => format!(
-            "\n# Provider-specific settings\nproviders:\n  {provider}:\n    model: {m}\n"
-        ),
+        Some(m) => {
+            format!("\n# Provider-specific settings\nproviders:\n  {provider}:\n    model: {m}\n")
+        }
         None => format!(
             "\n# Provider-specific settings\n# providers:\n#   {provider}:\n#     model: <model-name>\n"
         ),
@@ -117,13 +119,11 @@ pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: boo
     let provider_options: Vec<(&str, &str, &str)> =
         found.iter().map(|&name| (name, name, "")).collect();
 
-    let selected_provider = match cliclack::select("Select an AI provider")
-        .items(&provider_options)
-        .interact()
-    {
-        Ok(p) => p,
-        Err(_) => return 1,
-    };
+    let selected_provider =
+        match cliclack::select("Select an AI provider").items(&provider_options).interact() {
+            Ok(p) => p,
+            Err(_) => return 1,
+        };
 
     // Interactive: prompt for model (optional)
     let model_input: String = match cliclack::input("Model name (optional)")

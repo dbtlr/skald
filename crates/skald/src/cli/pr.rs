@@ -92,7 +92,8 @@ fn generate_pr_contents(
                 "Unknown provider '{}'. Available: {}",
                 provider_name,
                 skald_providers::available_provider_names().join(", ")
-            )).ok();
+            ))
+            .ok();
             return Err(1);
         }
     };

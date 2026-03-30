@@ -5,8 +5,8 @@ use tempfile::Builder;
 use tokio::process::Command;
 use tracing::{debug, warn};
 
-use crate::{CommitContext, PrContent, PrContext, Provider, ProviderError};
 use crate::config::CliProviderConfig;
+use crate::{CommitContext, PrContent, PrContext, Provider, ProviderError};
 
 pub struct CliProvider {
     config: &'static CliProviderConfig,
@@ -82,9 +82,8 @@ impl CliProvider {
 
         debug!(path = %tmp_path, "Wrote diff to temp file");
 
-        let file_refs = format!(
-            "The diff is available at: {tmp_path}\nRead that file to see the changes.",
-        );
+        let file_refs =
+            format!("The diff is available at: {tmp_path}\nRead that file to see the changes.",);
 
         // tmp file is dropped (and cleaned up) after call_cli returns
         self.call_cli(prompt, &file_refs).await
@@ -194,9 +193,9 @@ impl Provider for CliProvider {
         ctx: &PrContext,
         count: usize,
     ) -> Result<Vec<PrContent>, ProviderError> {
-        let response =
-            self.generate_with_diff_and_log(&ctx.rendered_prompt, &ctx.diff, &ctx.commit_log)
-                .await?;
+        let response = self
+            .generate_with_diff_and_log(&ctx.rendered_prompt, &ctx.diff, &ctx.commit_log)
+            .await?;
         let contents = parse_pr_response(&response, count);
         if contents.is_empty() {
             return Err(ProviderError::Generation {

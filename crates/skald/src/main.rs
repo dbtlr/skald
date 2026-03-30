@@ -60,18 +60,17 @@ fn main() {
     let is_tty = std::io::stdout().is_terminal();
 
     // Resolve provider name: --provider flag → config → "claude"
-    let provider_name = cli.provider.clone().unwrap_or_else(|| {
-        match config_result {
-            Ok(ref cfg) => cfg.provider.clone(),
-            Err(_) => "claude".to_string(),
-        }
+    let provider_name = cli.provider.clone().unwrap_or_else(|| match config_result {
+        Ok(ref cfg) => cfg.provider.clone(),
+        Err(_) => "claude".to_string(),
     });
 
     // Resolve model: --model flag → config providers.<name>.model → None
     let model = cli.model.clone().or_else(|| {
-        config_result.as_ref().ok().and_then(|cfg| {
-            cfg.providers.get(&provider_name).and_then(|p| p.model.clone())
-        })
+        config_result
+            .as_ref()
+            .ok()
+            .and_then(|cfg| cfg.providers.get(&provider_name).and_then(|p| p.model.clone()))
     });
 
     let code = match cli.command {

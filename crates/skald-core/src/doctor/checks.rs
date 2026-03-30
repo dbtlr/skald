@@ -189,10 +189,8 @@ fn check_provider_cli(name: &str, binary: &str, is_configured: bool) -> CheckRes
         .stderr(std::process::Stdio::null())
         .status()
     {
-        Ok(status) if status.success() => {
-            CheckResult::pass(name, &format!("{name} CLI available"))
-                .with_category(Category::Provider)
-        }
+        Ok(status) if status.success() => CheckResult::pass(name, &format!("{name} CLI available"))
+            .with_category(Category::Provider),
         _ => {
             if is_configured {
                 CheckResult::fail(
@@ -239,9 +237,7 @@ pub fn provider_checks(full: bool, configured_provider: &str) -> Vec<CheckResult
                     results.push(
                         CheckResult::warn(
                             &connectivity_name,
-                            &format!(
-                                "{configured_provider} CLI responded but output unexpected"
-                            ),
+                            &format!("{configured_provider} CLI responded but output unexpected"),
                         )
                         .with_category(Category::Provider)
                         .with_suggestion(&format!(
@@ -273,7 +269,9 @@ pub fn provider_checks(full: bool, configured_provider: &str) -> Vec<CheckResult
                         &format!("Could not run {configured_provider} CLI: {e}"),
                     )
                     .with_category(Category::Provider)
-                    .with_suggestion(&format!("Install or configure the {configured_provider} CLI")),
+                    .with_suggestion(&format!(
+                        "Install or configure the {configured_provider} CLI"
+                    )),
                 );
             }
         }
