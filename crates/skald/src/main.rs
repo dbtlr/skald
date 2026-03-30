@@ -224,6 +224,7 @@ fn main() {
         },
         Command::Doctor { fix, full } => cli::doctor::run_doctor(fix, full, fmt, is_tty),
         Command::Upgrade { dry_run } => cli::upgrade::run_upgrade(dry_run),
+        Command::Integrations { target } => cli::integrations::run_integrations(target),
     };
 
     process::exit(code);
