@@ -14,8 +14,7 @@ changelog_update = true
 [[package]]
 name = "skald"
 publish = false
-# Skip cargo package verification — we don't publish to crates.io
-cargo_package_args = ["--no-verify"]
+semver_check = false
 # Include commits from all workspace crates in changelog and change detection
 changelog_include = ["skald-core", "skald-providers", "skald-vcs", "skald-platform"]
 
