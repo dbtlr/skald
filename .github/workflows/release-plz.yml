@@ -3,6 +3,9 @@ name: Release-plz
 on:
   workflow_dispatch: {}
 
+env:
+  RUST_LOG: release_plz=debug
+
 jobs:
   release-plz-pr:
     name: Create release PR
