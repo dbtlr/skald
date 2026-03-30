@@ -13,10 +13,10 @@ name = "sk"
 path = "src/main.rs"
 
 [dependencies]
-skald-core = { path = "../skald-core", features = ["cli"] }
-skald-vcs = { path = "../skald-vcs" }
-skald-providers = { path = "../skald-providers" }
-skald-platform = { path = "../skald-platform" }
+skald-core = { path = "../skald-core", version = "0.3.0", features = ["cli"] }
+skald-vcs = { path = "../skald-vcs", version = "0.3.0" }
+skald-providers = { path = "../skald-providers", version = "0.3.0" }
+skald-platform = { path = "../skald-platform", version = "0.3.0" }
 clap = { version = "4", features = ["derive"] }
 clap_complete = "4"
 cliclack = "0.3"
