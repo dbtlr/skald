@@ -224,18 +224,23 @@ fn config_init_existing_shows_info() {
 }
 
 #[test]
-fn alias_exits_zero() {
-    sk().arg("alias").assert().success();
+fn alias_list_exits_zero() {
+    sk().args(["alias", "list"]).assert().success();
 }
 
 #[test]
 fn alias_source_exits_zero() {
-    sk().args(["alias", "--source"]).assert().success();
+    sk().args(["alias", "list", "--source"]).assert().success();
+}
+
+#[test]
+fn alias_requires_subcommand() {
+    sk().arg("alias").assert().code(2);
 }
 
 #[test]
 fn aliases_backward_compat() {
-    sk().arg("aliases").assert().success();
+    sk().args(["aliases", "list"]).assert().success();
 }
 
 #[test]
