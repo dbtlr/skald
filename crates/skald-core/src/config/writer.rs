@@ -12,13 +12,11 @@ pub fn add_alias(name: &str, expansion: &str, path: &Path, force: bool) -> Resul
     let mut config = load_file(path)?.unwrap_or_default();
     let aliases = config.aliases.get_or_insert_with(Default::default);
 
-    if !force {
-        if let Some(existing) = aliases.get(name) {
-            return Err(SkaldError::AliasAlreadyExists {
-                name: name.to_string(),
-                expansion: existing.clone(),
-            });
-        }
+    if !force && let Some(existing) = aliases.get(name) {
+        return Err(SkaldError::AliasAlreadyExists {
+            name: name.to_string(),
+            expansion: existing.clone(),
+        });
     }
 
     aliases.insert(name.to_string(), expansion.to_string());
