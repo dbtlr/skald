@@ -215,13 +215,22 @@ fn main() {
                 }
             }
         }
-        Command::Alias { source } => match config_result {
-            Ok(ref cfg) => cli::aliases::run_aliases(cfg, fmt, is_tty, source),
-            Err(ref e) => {
-                cliclack::log::error(format!("Failed to load config: {e}")).ok();
-                1
+        Command::Alias { action } => {
+            use cli::AliasAction;
+            match action {
+                AliasAction::List { source } => match config_result {
+                    Ok(ref cfg) => cli::aliases::run_list(cfg, fmt, is_tty, source),
+                    Err(ref e) => {
+                        cliclack::log::error(format!("Failed to load config: {e}")).ok();
+                        1
+                    }
+                },
+                AliasAction::Add { name, expansion, project, force } => {
+                    cli::aliases::run_add(&name, &expansion, project, force)
+                }
+                AliasAction::Remove { name, project } => cli::aliases::run_remove(&name, project),
             }
-        },
+        }
         Command::Doctor { fix, full } => cli::doctor::run_doctor(fix, full, fmt, is_tty),
         Command::Upgrade { dry_run } => cli::upgrade::run_upgrade(dry_run),
         Command::Integrations { target } => cli::integrations::run_integrations(target),
