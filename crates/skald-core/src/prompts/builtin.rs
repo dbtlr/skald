@@ -40,19 +40,29 @@ You are writing the extended body for a git commit message.
 The commit title is:
 {{ title }}
 
-Write a concise extended description that explains:
-1. WHAT was changed (high-level summary, not a line-by-line restatement of the diff)
-2. WHY it was changed (motivation, problem being solved)
-3. Any important details about HOW it was done (only if non-obvious)
+Write a structured commit body that explains the change. Use this format:
 
-Format rules:
+1. A one-line summary of WHY this change was made (the motivation, not what the diff shows)
+2. A blank line
+3. Bullet points ("- ") covering the key changes — what was done and any non-obvious decisions
+
+Example output:
+
+```
+Aliases required manual YAML editing to add or remove entries.
+
+- Add sk alias add/remove subcommands for CLI-driven management
+- Validate aliases before writing to catch errors at authoring time
+- Fail on duplicate unless --force is passed
+```
+
+Rules:
 - Wrap lines at 72 characters
-- Start with a brief summary paragraph (2-3 sentences max)
-- If there are multiple distinct changes, list them with "- " bullet points
-- Do NOT restate the commit title
-- Do NOT include generic phrases like "This commit..." or "Changes include..."
-- Do NOT list every single file that changed — focus on the meaningful changes
-- Keep the total body under 15 lines
+- Keep the body between 3-10 lines total
+- Do NOT restate the commit title — the body should add information the title doesn't convey
+- Do NOT include preamble like "This commit..." or "Changes include..."
+- Focus on the meaningful changes — skip trivial reformatting, import reordering, etc.
+- Use the diff content you've been given to understand what actually changed — the diffstat below is just a summary
 
 {% if context %}
 Developer context:
