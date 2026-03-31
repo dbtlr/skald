@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Core library for skald — config, logging, output, error types"
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

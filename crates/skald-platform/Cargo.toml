@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Platform adapter trait and implementations for skald"
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
