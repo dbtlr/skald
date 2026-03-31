@@ -197,8 +197,13 @@ def update_provider(key, new_json):
         print(f"WARNING: empty model list returned for {key} — skipping update", file=sys.stderr)
         return
     existing = providers.get(key, {})
+    recommended = existing.get("recommended", new_models[0])
+    # Ensure the recommended model is always in the list (alias IDs like
+    # "claude-haiku-4-5" are valid even when the API only returns dated versions)
+    if recommended not in new_models:
+        new_models.insert(0, recommended)
     providers[key] = {
-        "recommended": existing.get("recommended", new_models[0]),
+        "recommended": recommended,
         "models": new_models,
     }
 
