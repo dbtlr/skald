@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "AI-powered git workflow CLI"
+readme = "README.md"
 default-run = "sk"
 
 [[bin]]
