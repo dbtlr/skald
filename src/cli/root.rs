@@ -1,7 +1,7 @@
 use std::io::IsTerminal;
 
+use crate::engine::output::OutputFormat;
 use clap::Parser;
-use skald_core::output::OutputFormat;
 
 #[derive(Parser, Debug)]
 #[command(

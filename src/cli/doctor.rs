@@ -1,5 +1,5 @@
-use skald_core::doctor::{Category, CheckResult, CheckStatus, DoctorReport, run_checks};
-use skald_core::output::OutputFormat;
+use crate::engine::doctor::{Category, CheckResult, CheckStatus, DoctorReport, run_checks};
+use crate::engine::output::OutputFormat;
 
 fn category_name(cat: &Category) -> &'static str {
     match cat {

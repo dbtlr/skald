@@ -128,8 +128,9 @@ pub struct DoctorReport {
 pub fn run_checks(fix: bool, full: bool) -> DoctorReport {
     let mut results = Vec::new();
 
-    let configured_provider =
-        crate::config::load_config().map(|c| c.provider).unwrap_or_else(|_| "claude".into());
+    let configured_provider = crate::engine::config::load_config()
+        .map(|c| c.provider)
+        .unwrap_or_else(|_| "claude".into());
 
     results.extend(checks::environment_checks());
     results.extend(checks::config_checks(fix));

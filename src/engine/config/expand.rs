@@ -1,4 +1,4 @@
-use crate::core::error::{Result, SkaldError};
+use crate::engine::error::{Result, SkaldError};
 
 use super::schema::RawConfig;
 

@@ -1,8 +1,11 @@
 mod cli;
-mod core;
+mod engine;
+#[allow(dead_code)]
 mod platform;
+#[allow(dead_code)]
 mod providers;
 mod ui;
+#[allow(dead_code)]
 mod vcs;
 
 use std::io::IsTerminal;
@@ -24,11 +27,11 @@ fn main() {
     }
 
     // Load config early (before clap). Non-fatal — store Result.
-    let config_result = skald_core::config::load_config();
+    let config_result = crate::engine::config::load_config();
 
     // Expand aliases if config loaded and has aliases
     let effective_args = if let Ok(ref cfg) = config_result {
-        if let Some(expanded) = skald_core::config::expand_alias(&raw_args[1..], &cfg.aliases) {
+        if let Some(expanded) = crate::engine::config::expand_alias(&raw_args[1..], &cfg.aliases) {
             let mut full = vec![raw_args[0].clone()];
             full.extend(expanded);
             full
@@ -50,7 +53,7 @@ fn main() {
     }
 
     // Initialize logging (holds guard for file appender lifetime)
-    let _log_guard = skald_core::logging::init(cli.verbose, cli.quiet);
+    let _log_guard = crate::engine::logging::init(cli.verbose, cli.quiet);
 
     tracing::debug!(
         verbose = cli.verbose,

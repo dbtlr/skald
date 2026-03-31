@@ -1,10 +1,10 @@
-use skald_core::config::schema::ResolvedConfig;
-use skald_core::output::OutputFormat;
-use skald_core::prompts::{PromptContext, mock_prompt_context, render_prompt, resolve_template};
-use skald_platform::{CreatePrRequest, PlatformAdapter, detect_platform};
-use skald_providers::{CliProvider, PrContent, PrContext, Provider, get_provider_config};
-use skald_vcs::git::GitAdapter;
-use skald_vcs::{DiffOptions, DiffResult, VcsAdapter};
+use crate::engine::config::schema::ResolvedConfig;
+use crate::engine::output::OutputFormat;
+use crate::engine::prompts::{PromptContext, mock_prompt_context, render_prompt, resolve_template};
+use crate::platform::{CreatePrRequest, PlatformAdapter, detect_platform};
+use crate::providers::{CliProvider, PrContent, PrContext, Provider, get_provider_config};
+use crate::vcs::git::GitAdapter;
+use crate::vcs::{DiffOptions, DiffResult, VcsAdapter};
 
 pub struct PrOptions {
     pub show_prompt: bool,
@@ -91,7 +91,7 @@ fn generate_pr_contents(
             cliclack::log::error(format!(
                 "Unknown provider '{}'. Available: {}",
                 provider_name,
-                skald_providers::available_provider_names().join(", ")
+                crate::providers::available_provider_names().join(", ")
             ))
             .ok();
             return Err(1);

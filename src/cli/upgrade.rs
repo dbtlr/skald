@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::path::PathBuf;
 
-use skald_core::upgrade::{check_latest_version, current_target};
+use crate::engine::upgrade::{check_latest_version, current_target};
 
 pub fn run_upgrade(dry_run: bool) -> i32 {
     let spinner = cliclack::spinner();

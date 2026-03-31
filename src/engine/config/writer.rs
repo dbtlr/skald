@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use crate::core::config::aliases::validate_aliases;
-use crate::core::config::loader::load_file;
-use crate::core::error::{Result, SkaldError};
+use crate::engine::config::aliases::validate_aliases;
+use crate::engine::config::loader::load_file;
+use crate::engine::error::{Result, SkaldError};
 
 /// Add an alias to a YAML config file.
 ///

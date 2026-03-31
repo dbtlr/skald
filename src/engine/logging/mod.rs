@@ -1,6 +1,6 @@
 mod rotate;
 
-use crate::core::config::paths;
+use crate::engine::config::paths;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt;

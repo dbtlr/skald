@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use crate::core::config::paths::config_dir;
-use crate::core::error::{Result, SkaldError};
+use crate::engine::config::paths::config_dir;
+use crate::engine::error::{Result, SkaldError};
 
 use super::builtin::get_builtin;
 

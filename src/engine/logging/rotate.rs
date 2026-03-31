@@ -1,4 +1,4 @@
-use crate::core::config::paths;
+use crate::engine::config::paths;
 use std::time::{Duration, SystemTime};
 
 pub fn prune_old_logs(retention_days: u64) -> std::io::Result<usize> {

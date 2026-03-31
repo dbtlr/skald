@@ -5,9 +5,7 @@ pub mod config;
 pub mod models;
 
 pub use cli_provider::CliProvider;
-pub use config::{
-    CliProviderConfig, available_provider_names, get_provider_config, is_provider_available,
-};
+pub use config::{available_provider_names, get_provider_config};
 
 #[derive(Debug, Clone)]
 pub struct CommitContext {

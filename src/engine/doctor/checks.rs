@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime};
 use tracing::{debug, info};
 
 use super::{Category, CheckResult};
-use crate::core::config;
+use crate::engine::config;
 
 /// Shell out to a command with one flag, returning combined stdout/stderr on success.
 fn check_command_available(cmd: &str, version_flag: &str) -> Option<String> {
@@ -373,7 +373,7 @@ fn check_stale_logs(fix: bool) -> CheckResult {
     }
 
     if fix {
-        match crate::logging::prune_old_logs(14) {
+        match crate::engine::logging::prune_old_logs(14) {
             Ok(pruned) => CheckResult::fixed(
                 "stale_logs",
                 &format!("pruned {pruned} log file(s) older than 14 days"),
@@ -392,7 +392,7 @@ fn check_stale_logs(fix: bool) -> CheckResult {
 
 fn check_version() -> CheckResult {
     debug!("checking for version updates");
-    match crate::upgrade::check_latest_version() {
+    match crate::engine::upgrade::check_latest_version() {
         Some(info) if info.update_available => {
             info!(current = %info.current, latest = %info.latest, "update available");
             CheckResult::warn(
@@ -415,7 +415,7 @@ fn check_version() -> CheckResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::doctor::Category;
+    use crate::engine::doctor::Category;
     use serial_test::serial;
 
     #[test]

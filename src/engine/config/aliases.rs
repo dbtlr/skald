@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::core::error::{Result, SkaldError};
+use crate::engine::error::{Result, SkaldError};
 
 pub const BUILTIN_COMMANDS: &[&str] = &["commit", "pr", "config", "alias", "doctor", "completions"];
 

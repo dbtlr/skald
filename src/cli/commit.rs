@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-use skald_core::config::schema::ResolvedConfig;
-use skald_core::output::OutputFormat;
-use skald_core::prompts::{PromptContext, render_prompt, resolve_template};
-use skald_providers::{CliProvider, CommitContext, Provider, get_provider_config};
-use skald_vcs::git::GitAdapter;
-use skald_vcs::{DiffOptions, StageMode, VcsAdapter};
+use crate::engine::config::schema::ResolvedConfig;
+use crate::engine::output::OutputFormat;
+use crate::engine::prompts::{PromptContext, render_prompt, resolve_template};
+use crate::providers::{CliProvider, CommitContext, Provider, get_provider_config};
+use crate::vcs::git::GitAdapter;
+use crate::vcs::{DiffOptions, StageMode, VcsAdapter};
 
 pub struct CommitOptions {
     pub show_prompt: bool,
@@ -139,7 +139,7 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
             cliclack::log::error(format!(
                 "Unknown provider '{}'. Available: {}",
                 opts.provider_name,
-                skald_providers::available_provider_names().join(", ")
+                crate::providers::available_provider_names().join(", ")
             ))
             .ok();
             return 1;

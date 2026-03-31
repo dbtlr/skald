@@ -1,4 +1,4 @@
-use crate::core::error::{Result, SkaldError};
+use crate::engine::error::{Result, SkaldError};
 use std::collections::HashMap;
 use tera::{Context, Tera};
 
@@ -56,7 +56,7 @@ pub fn render_prompt(template: &str, ctx: &PromptContext) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::prompts::builtin;
+    use crate::engine::prompts::builtin;
 
     #[test]
     fn renders_simple_variables() {

@@ -1,9 +1,9 @@
-use skald_core::config::{ResolvedConfig, global_config_path};
-use skald_core::output::OutputFormat;
-use skald_providers::config::{
+use crate::engine::config::{ResolvedConfig, global_config_path};
+use crate::engine::output::OutputFormat;
+use crate::providers::config::{
     available_provider_names, get_provider_config, is_provider_available,
 };
-use skald_providers::models::{get_model_list, get_opencode_models, models_for_provider};
+use crate::providers::models::{get_model_list, get_opencode_models, models_for_provider};
 
 fn build_config_template(provider: &str, model: Option<&str>) -> String {
     let model_section = match model {
@@ -231,13 +231,13 @@ pub fn run_eject(project: bool, name: Option<&str>) -> i32 {
     let target_dir = if project {
         std::env::current_dir().unwrap_or_default().join(".skald").join("prompts")
     } else {
-        skald_core::config::config_dir().join("prompts")
+        crate::engine::config::config_dir().join("prompts")
     };
 
     let names: Option<Vec<&str>> = name.map(|n| vec![n]);
     let names_ref = names.as_deref();
 
-    match skald_core::prompts::eject_prompts(&target_dir, names_ref) {
+    match crate::engine::prompts::eject_prompts(&target_dir, names_ref) {
         Ok(written) => {
             if written.is_empty() {
                 cliclack::log::info(format!(

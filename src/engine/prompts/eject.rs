@@ -1,5 +1,5 @@
-use crate::core::error::{Result, SkaldError};
-use crate::core::prompts::builtin;
+use crate::engine::error::{Result, SkaldError};
+use crate::engine::prompts::builtin;
 use std::path::Path;
 
 pub fn eject_prompts(target_dir: &Path, names: Option<&[&str]>) -> Result<Vec<String>> {
