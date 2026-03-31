@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "AI provider trait and implementations for skald"
+readme = "README.md"
 
 [dependencies]
 async-trait = "0.1"
