@@ -19,10 +19,16 @@ AI-powered git workflow CLI. Generates commit messages, PR titles, and PR descri
 
 ## Install
 
-### From source
+### Install script (recommended)
 
 ```sh
-cargo install --path crates/skald
+curl -fsSL https://raw.githubusercontent.com/dbtlr/skald/main/scripts/install.sh | bash
+```
+
+### From crates.io
+
+```sh
+cargo install skald-cli
 ```
 
 ### GitHub Releases

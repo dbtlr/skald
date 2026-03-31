@@ -154,12 +154,11 @@ pub enum Command {
         #[command(subcommand)]
         action: Option<ConfigAction>,
     },
-    /// List active aliases and their sources
-    #[command(alias = "aliases")]
+    /// Manage aliases
+    #[command(alias = "aliases", arg_required_else_help = true)]
     Alias {
-        /// Show which config file each alias comes from
-        #[arg(long)]
-        source: bool,
+        #[command(subcommand)]
+        action: AliasAction,
     },
     /// Validate environment, config, and provider connectivity
     Doctor {
@@ -228,6 +227,37 @@ pub enum ConfigAction {
         project: bool,
         /// Specific template name to eject (ejects all if omitted)
         name: Option<String>,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum AliasAction {
+    /// List all active aliases
+    List {
+        /// Show which config file each alias comes from
+        #[arg(long)]
+        source: bool,
+    },
+    /// Add a new alias
+    Add {
+        /// Alias name
+        name: String,
+        /// Command expansion (e.g. "commit -n 5")
+        expansion: String,
+        /// Write to project config (.skaldrc.yaml) instead of global
+        #[arg(long)]
+        project: bool,
+        /// Overwrite an existing alias
+        #[arg(long)]
+        force: bool,
+    },
+    /// Remove an alias
+    Remove {
+        /// Alias name to remove
+        name: String,
+        /// Remove from project config (.skaldrc.yaml) instead of global
+        #[arg(long)]
+        project: bool,
     },
 }
 
