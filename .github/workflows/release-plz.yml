@@ -14,6 +14,12 @@ jobs:
       group: release-plz-${{ github.ref }}
       cancel-in-progress: false
     steps:
+      - name: Generate bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.ODIN_BOT_APP_ID }}
+          private-key: ${{ secrets.ODIN_BOT_PRIVATE_KEY }}
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -25,7 +31,7 @@ jobs:
         with:
           command: release-pr
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.bot-token.outputs.token }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   release-plz-release:
@@ -35,6 +41,12 @@ jobs:
       contents: write
       pull-requests: read
     steps:
+      - name: Generate bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.ODIN_BOT_APP_ID }}
+          private-key: ${{ secrets.ODIN_BOT_PRIVATE_KEY }}
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -46,5 +58,5 @@ jobs:
         with:
           command: release
         env:
-          GITHUB_TOKEN: ${{ secrets.ODIN_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.bot-token.outputs.token }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
