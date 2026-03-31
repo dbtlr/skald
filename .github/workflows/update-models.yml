@@ -13,6 +13,13 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Generate bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.ODIN_BOT_APP_ID }}
+          private-key: ${{ secrets.ODIN_BOT_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
 
       - name: Update models.json
@@ -36,7 +43,7 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.ODIN_BOT_TOKEN }}
+          token: ${{ steps.bot-token.outputs.token }}
           title: "chore: update models.json"
           body: "Automated update of available models from provider APIs."
           branch: update-models
