@@ -1,18 +1,17 @@
-name: Release-plz
+name: Release-plz Release
 
 on:
-  workflow_dispatch: {}
+  push:
+    branches:
+      - main
 
 jobs:
-  release-plz-pr:
-    name: Create release PR
+  release-plz-release:
+    name: Tag and publish release
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
-    concurrency:
-      group: release-plz-${{ github.ref }}
-      cancel-in-progress: false
+      pull-requests: read
     steps:
       - name: Generate bot token
         id: bot-token
@@ -29,7 +28,7 @@ jobs:
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
-          command: release-pr
+          command: release
         env:
           GITHUB_TOKEN: ${{ steps.bot-token.outputs.token }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
