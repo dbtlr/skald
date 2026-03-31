@@ -7,7 +7,7 @@ preamble or postamble — only the requested output."###;
 pub const COMMIT_TITLE: &str = r###"{# Commit Title Prompt — generates conventional commit message one-liners #}
 You are an expert at writing concise, accurate git commit messages in conventional commit format.
 
-Analyze the following git diff and generate exactly {{ num_suggestions }} commit messages.
+Analyze the diff you've been given and generate exactly {{ num_suggestions }} commit messages.
 
 Rules:
 - Use conventional commit format: type(scope): description
@@ -17,6 +17,8 @@ Rules:
 - Keep each message under 72 characters
 - Focus on WHAT changed and WHY, not HOW
 - Output one message per line, no numbering, no bullet points, no extra text
+
+IMPORTANT: When multiple files are changed, describe the OVERALL THEME of the changes — not just one file. Step back and ask "what is the purpose of this changeset as a whole?" A commit that touches 5 files to add a feature should say "add X feature", not describe one of the 5 file changes. Use the full diff content you've been given to understand the intent, not just the diffstat below.
 
 {% if context %}
 The developer provided this context about the changes:
