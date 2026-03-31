@@ -20,9 +20,9 @@ Skald (`sk`) is an AI-powered git workflow CLI written in Rust. It generates com
 - **Accessible.** NO_COLOR, dumb terminal fallback, screen-reader-friendly status messages, keyboard-only navigation.
 - **Dogfood the tool.** Once M1 ships, use `sk` to generate commit messages and PR descriptions for skald itself.
 
-## Workspace Structure
+## Project Structure
 
-Four crates: `skald` (binary/CLI), `skald-core` (config, aliases, output, logging), `skald-providers` (AI provider trait + impls), `skald-vcs` (VCS adapter trait + impls). See each crate's README for specifics.
+Single crate (`skald-cli`) with modules: `cli/` (commands), `ui/` (terminal UI), `engine/` (config, logging, output, prompts, doctor, errors), `providers/` (AI provider trait + impls), `vcs/` (VCS adapter), `platform/` (GitHub/GitLab adapters).
 
 ## Skills
 

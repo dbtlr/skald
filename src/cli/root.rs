@@ -1,0 +1,281 @@
+use std::io::IsTerminal;
+
+use crate::engine::output::OutputFormat;
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(
+    name = "sk",
+    about = "AI-powered git workflow CLI",
+    long_about = "Skald — generate commit messages, PR titles, and PR descriptions with AI.",
+    version,
+    propagate_version = true,
+    arg_required_else_help = true
+)]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Command,
+
+    /// Increase verbosity (-v info, -vv debug, -vvv trace)
+    #[arg(short, long, action = clap::ArgAction::Count, global = true)]
+    pub verbose: u8,
+
+    /// Suppress all output except errors and final results
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+
+    /// Disable color output
+    #[arg(long, global = true)]
+    pub no_color: bool,
+
+    /// Output format
+    #[arg(long, value_enum, global = true)]
+    pub format: Option<OutputFormat>,
+
+    /// AI provider to use
+    #[arg(long, global = true)]
+    pub provider: Option<String>,
+
+    /// Model to use for AI generation
+    #[arg(long, global = true)]
+    pub model: Option<String>,
+
+    /// Run as if started in <path>
+    #[arg(short = 'C', global = true, value_name = "PATH")]
+    pub directory: Option<std::path::PathBuf>,
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum Command {
+    /// Generate commit messages and commit
+    Commit {
+        /// Render the prompt and print to stdout without calling AI
+        #[arg(long)]
+        show_prompt: bool,
+        /// Generate one message and commit immediately
+        #[arg(long)]
+        auto: bool,
+        /// Print messages to stdout without committing
+        #[arg(long)]
+        message_only: bool,
+        /// Number of suggestions to generate
+        #[arg(short = 'n', long = "num", default_value = "3")]
+        count: usize,
+        /// Stage tracked modified files before committing (git add -u)
+        #[arg(short = 'a')]
+        stage_tracked: bool,
+        /// Stage all files including untracked (git add -A)
+        #[arg(short = 'A', long = "all")]
+        stage_all: bool,
+        /// Amend the previous commit
+        #[arg(long)]
+        amend: bool,
+        /// Provide context about the changes
+        #[arg(long)]
+        context: Option<String>,
+        /// Read context from a file
+        #[arg(long)]
+        context_file: Option<std::path::PathBuf>,
+        /// Print what would be committed without executing
+        #[arg(long)]
+        dry_run: bool,
+        /// Generate extended description (commit body)
+        #[arg(long)]
+        extended: bool,
+    },
+    /// Generate PR title and description
+    Pr {
+        /// Render the prompt and print to stdout without calling AI
+        #[arg(long)]
+        show_prompt: bool,
+        /// Generate title + description and create PR immediately
+        #[arg(long)]
+        auto: bool,
+        /// Print title suggestions to stdout without creating PR
+        #[arg(long)]
+        title_only: bool,
+        /// Print full PR payload without creating
+        #[arg(long)]
+        dry_run: bool,
+        /// Create as draft PR
+        #[arg(long)]
+        draft: bool,
+        /// Push current branch to remote before creating PR
+        #[arg(long)]
+        push: bool,
+        /// Update existing PR title and description
+        #[arg(long)]
+        update: bool,
+        /// Target branch
+        #[arg(long, short = 'b')]
+        base: Option<String>,
+        /// Number of title suggestions
+        #[arg(short = 'n', long = "num", default_value = "3")]
+        count: usize,
+        /// Provide context about the PR
+        #[arg(long, short = 'c')]
+        context: Option<String>,
+    },
+    /// Generate merge request title and description (alias for pr)
+    Mr {
+        /// Render the prompt and print to stdout without calling AI
+        #[arg(long)]
+        show_prompt: bool,
+        /// Generate title + description and create MR immediately
+        #[arg(long)]
+        auto: bool,
+        /// Print title suggestions to stdout without creating MR
+        #[arg(long)]
+        title_only: bool,
+        /// Print full MR payload without creating
+        #[arg(long)]
+        dry_run: bool,
+        /// Create as draft MR
+        #[arg(long)]
+        draft: bool,
+        /// Push current branch to remote before creating MR
+        #[arg(long)]
+        push: bool,
+        /// Update existing MR title and description
+        #[arg(long)]
+        update: bool,
+        /// Target branch
+        #[arg(long, short = 'b')]
+        base: Option<String>,
+        /// Number of title suggestions
+        #[arg(short = 'n', long = "num", default_value = "3")]
+        count: usize,
+        /// Provide context about the MR
+        #[arg(long, short = 'c')]
+        context: Option<String>,
+    },
+    /// View and manage configuration
+    Config {
+        #[command(subcommand)]
+        action: Option<ConfigAction>,
+    },
+    /// Manage aliases
+    #[command(alias = "aliases", arg_required_else_help = true)]
+    Alias {
+        #[command(subcommand)]
+        action: AliasAction,
+    },
+    /// Validate environment, config, and provider connectivity
+    Doctor {
+        /// Auto-fix all fixable issues
+        #[arg(long)]
+        fix: bool,
+        /// Run extended checks including live provider connectivity
+        #[arg(long)]
+        full: bool,
+    },
+    /// Check for and install updates
+    Upgrade {
+        /// Show what would happen without downloading
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Generate shell completions
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
+    /// Output integration config snippets for external tools
+    Integrations {
+        #[command(subcommand)]
+        target: Option<IntegrationTarget>,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum IntegrationTarget {
+    /// Worktrunk commit message config
+    Worktrunk,
+    /// Lazygit custom command config
+    Lazygit,
+    /// Vim-fugitive keybinding config
+    Fugitive,
+    /// Git prepare-commit-msg hook
+    Hook {
+        /// Install the hook to .git/hooks/
+        #[arg(long)]
+        install: bool,
+        /// Overwrite existing hook file
+        #[arg(long)]
+        force: bool,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum ConfigAction {
+    /// Create a default global config file
+    Init {
+        /// Initialize with a specific provider
+        #[arg(long)]
+        provider: Option<String>,
+        /// Initialize with a specific model
+        #[arg(long)]
+        model: Option<String>,
+    },
+    /// Display the resolved configuration
+    Show,
+    /// Eject prompt templates for customization
+    Eject {
+        /// Eject to project directory (.skald/prompts/) instead of global
+        #[arg(long)]
+        project: bool,
+        /// Specific template name to eject (ejects all if omitted)
+        name: Option<String>,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum AliasAction {
+    /// List all active aliases
+    List {
+        /// Show which config file each alias comes from
+        #[arg(long)]
+        source: bool,
+    },
+    /// Add a new alias
+    Add {
+        /// Alias name
+        name: String,
+        /// Command expansion (e.g. "commit -n 5")
+        expansion: String,
+        /// Write to project config (.skaldrc.yaml) instead of global
+        #[arg(long)]
+        project: bool,
+        /// Overwrite an existing alias
+        #[arg(long)]
+        force: bool,
+    },
+    /// Remove an alias
+    Remove {
+        /// Alias name to remove
+        name: String,
+        /// Remove from project config (.skaldrc.yaml) instead of global
+        #[arg(long)]
+        project: bool,
+    },
+}
+
+impl Cli {
+    pub fn effective_format(&self) -> OutputFormat {
+        if let Some(fmt) = self.format {
+            return fmt;
+        }
+        if std::io::stdout().is_terminal() { OutputFormat::Table } else { OutputFormat::Plain }
+    }
+
+    pub fn should_use_color(&self) -> bool {
+        if self.no_color {
+            return false;
+        }
+        if std::env::var_os("NO_COLOR").is_some() {
+            return false;
+        }
+        std::io::stdout().is_terminal()
+    }
+}
