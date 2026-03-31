@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.2 — 2026-03-31
+
+### Added
+- `sk alias add` and `sk alias remove` subcommands for CLI-driven alias management
+- `sk alias list` as explicit subcommand (bare `sk alias` now prints help)
+- Crate README files for crates.io display
+- `/release` skill for driving version bumps and releases from conversation
+- cargo-dist release pipeline with cross-platform binary builds
+
+### Changed
+- Consolidated 5-crate workspace into single `skald-cli` crate
+- Replaced release-plz with cargo-dist for release automation
+- Improved commit body prompt to produce structured bullet-style output instead of single-line summaries
+- Improved commit title prompt to generalize across multi-file changes instead of narrowly describing one file
+- GitHub App (Odin bot) for CI workflow authentication
+
+### Fixed
+- Models update script now ensures recommended model is always in the models list
+- Release workflow timing: version bump PR and tag creation no longer race
+
 ## v0.3.0 — 2026-03-29
 
 ### PR / Merge Request Command
