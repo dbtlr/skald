@@ -125,7 +125,7 @@ pub struct DoctorReport {
     pub summary: Summary,
 }
 
-pub fn run_checks(fix: bool, full: bool) -> DoctorReport {
+pub fn run_checks(fix: bool, online: bool) -> DoctorReport {
     let mut results = Vec::new();
 
     let configured_provider = crate::engine::config::load_config()
@@ -134,7 +134,7 @@ pub fn run_checks(fix: bool, full: bool) -> DoctorReport {
 
     results.extend(checks::environment_checks());
     results.extend(checks::config_checks(fix));
-    results.extend(checks::provider_checks(full, &configured_provider));
+    results.extend(checks::provider_checks(online, &configured_provider));
     results.extend(checks::maintenance_checks(fix));
 
     let summary = Summary::from_results(&results);

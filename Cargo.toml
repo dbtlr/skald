@@ -12,6 +12,10 @@ default-run = "sk"
 name = "sk"
 path = "src/main.rs"
 
+[features]
+default = []
+integrations = []
+
 [dependencies]
 async-trait = "0.1"
 clap = { version = "4", features = ["derive"] }

@@ -2,7 +2,7 @@ use crate::cli::IntegrationTarget;
 
 const WORKTRUNK_CONFIG: &str = r#"[tools.skald]
 command = "sk"
-args = ["commit", "--message-only", "--auto"]
+args = ["commit", "--dry-run", "-y"]
 "#;
 
 const WORKTRUNK_INSTRUCTIONS: &str = "\
@@ -20,7 +20,7 @@ const LAZYGIT_INSTRUCTIONS: &str = "\
 Add the following to your lazygit config.yml (usually ~/.config/lazygit/config.yml):";
 
 const FUGITIVE_CONFIG: &str = r#"" Skald: AI-generated commit message
-nnoremap <leader>sc :!sk commit --auto<CR>
+nnoremap <leader>sc :!sk commit -y<CR>
 "#;
 
 const FUGITIVE_INSTRUCTIONS: &str = "\
@@ -31,7 +31,7 @@ const HOOK_SCRIPT: &str = r#"#!/bin/sh
 COMMIT_MSG_FILE=$1
 COMMIT_SOURCE=$2
 if [ -z "$COMMIT_SOURCE" ]; then
-    MSG=$(sk commit --message-only --auto 2>/dev/null)
+    MSG=$(sk commit --dry-run -y 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$MSG" ]; then
         echo "$MSG" > "$COMMIT_MSG_FILE"
     fi
