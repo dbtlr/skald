@@ -1,11 +1,7 @@
 use crate::engine::config::{self, ResolvedConfig};
 use crate::engine::output::OutputFormat;
 
-pub fn run_list(
-    config: &ResolvedConfig,
-    format: OutputFormat,
-    is_tty: bool,
-) -> i32 {
+pub fn run_list(config: &ResolvedConfig, format: OutputFormat, is_tty: bool) -> i32 {
     if config.aliases.is_empty() {
         cliclack::log::info("No aliases configured.").ok();
         return 0;

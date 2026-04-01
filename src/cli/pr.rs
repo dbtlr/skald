@@ -748,7 +748,10 @@ fn handle_context_regeneration(
     }
 }
 
-fn load_context(context: &Option<String>, context_file: &Option<std::path::PathBuf>) -> Option<String> {
+fn load_context(
+    context: &Option<String>,
+    context_file: &Option<std::path::PathBuf>,
+) -> Option<String> {
     if let Some(ctx) = context {
         return Some(ctx.clone());
     }

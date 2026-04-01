@@ -9,6 +9,6 @@ pub mod pr;
 pub mod root;
 pub mod upgrade;
 
-pub use root::{AliasAction, Cli, Command, ConfigAction};
 #[cfg(feature = "integrations")]
 pub use root::IntegrationTarget;
+pub use root::{AliasAction, Cli, Command, ConfigAction};

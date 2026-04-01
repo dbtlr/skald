@@ -122,17 +122,7 @@ fn main() {
                 config,
             )
         }
-        Command::Pr {
-            yes,
-            dry_run,
-            draft,
-            push,
-            update,
-            base,
-            count,
-            context,
-            context_file,
-        } => {
+        Command::Pr { yes, dry_run, draft, push, update, base, count, context, context_file } => {
             let config = match config_result {
                 Ok(ref cfg) => cfg,
                 Err(ref e) => {
@@ -159,17 +149,7 @@ fn main() {
                 config,
             )
         }
-        Command::Mr {
-            yes,
-            dry_run,
-            draft,
-            push,
-            update,
-            base,
-            count,
-            context,
-            context_file,
-        } => {
+        Command::Mr { yes, dry_run, draft, push, update, base, count, context, context_file } => {
             let config = match config_result {
                 Ok(ref cfg) => cfg,
                 Err(ref e) => {

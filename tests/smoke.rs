@@ -347,7 +347,10 @@ fn commit_help_shows_flags() {
 
 #[test]
 fn doctor_offline_flag_in_help() {
-    sk().args(["doctor", "--help"]).assert().success().stdout(predicate::str::contains("--offline"));
+    sk().args(["doctor", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--offline"));
 }
 
 #[test]
