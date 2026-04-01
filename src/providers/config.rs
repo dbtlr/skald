@@ -13,7 +13,7 @@ static CLAUDE: CliProviderConfig = CliProviderConfig {
     name: "claude",
     binary: "claude",
     prompt_args: &["-p"],
-    tool_args: &["--allowedTools", "Read", "--bare"],
+    tool_args: &["--allowedTools", "Read"],
     model_flag: "--model",
 };
 
