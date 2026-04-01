@@ -34,7 +34,7 @@ Use the shared formatters in `skald-core::output`. Never format output manually 
 
 - All color is routed through helpers that check the no-color state before applying styles.
 - `NO_COLOR` env var (any value) → suppress all color unconditionally.
-- `--no-color` flag → same effect.
+- `--color never` flag → same effect. Also supports `--color always` to force color through pipes.
 - Piped stdout → auto no-color + no spinners + no interactive prompts.
 - `$TERM=dumb` or unset → basic prompts only, no ANSI sequences.
 - Never rely solely on color or symbols to convey meaning. Status text should be readable as plain text — "Error: config not found" not just a red ✗.

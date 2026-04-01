@@ -22,8 +22,7 @@ sk alias remove ci --project   # remove from project config
 ### Listing aliases
 
 ```sh
-sk alias list              # list all active aliases
-sk alias list --source     # include which config file each alias comes from
+sk alias list              # list all active aliases (always shows source)
 sk alias list --format json
 ```
 
@@ -34,8 +33,8 @@ You can also define aliases directly in your config files:
 ```yaml
 aliases:
   ci: "commit -n 5"
-  ca: "commit --auto -A"
-  fix: "commit --auto -a --context 'bug fix'"
+  ca: "commit -y -a"
+  fix: "commit -y -a --context 'bug fix'"
 ```
 
 Each alias maps a short name to a command with flags. When you run `sk ci`, skald expands it to `sk commit -n 5` before parsing.
@@ -48,8 +47,8 @@ Each alias maps a short name to a command with flags. When you run `sk ci`, skal
 4. The expanded arguments are then parsed by clap normally
 
 ```sh
-sk ci --no-extended
-# expands to: sk commit -n 5 --no-extended
+sk ci --dry-run
+# expands to: sk commit -n 5 --dry-run
 ```
 
 ## Resolution Rules
@@ -79,14 +78,14 @@ sk alias add ci "commit -n 5"
 ### Auto-commit all files
 
 ```sh
-sk alias add ca "commit --auto -A"
+sk alias add ca "commit -y -a"
 ```
 
 ### Context-aware commits
 
 ```sh
-sk alias add fix "commit --auto -a --context 'bug fix'"
-sk alias add feat "commit --auto -a --context 'new feature'"
+sk alias add fix "commit -y -a --context 'bug fix'"
+sk alias add feat "commit -y -a --context 'new feature'"
 ```
 
 ### PR shortcut

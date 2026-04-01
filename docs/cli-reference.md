@@ -11,7 +11,7 @@
 | `sk aliases` | Stub (M1) | List active aliases and their sources |
 | `sk doctor` | Stub (M3) | Validate environment, config, and provider connectivity |
 | `sk completions <shell>` | Working | Generate shell completions (bash, zsh, fish) |
-| `sk integrations` | Working | Output integration config snippets |
+| `sk integrations` | Experimental | Output integration config snippets (requires `--features integrations`) |
 
 ## Global Flags
 
@@ -21,10 +21,11 @@ These flags are available on all commands:
 |------|-------|-------------|
 | `--verbose` | `-v` | Increase verbosity. Stackable: `-v` (info), `-vv` (debug), `-vvv` (trace) |
 | `--quiet` | `-q` | Suppress all output except errors and final results |
-| `--no-color` | | Disable color output. Also triggered by `NO_COLOR` env var |
+| `--color` | | When to use color: `auto` (default), `always`, `never`. Also respects `NO_COLOR` env var |
 | `--format` | | Output format: `plain`, `table`, `json` |
 | `--provider` | | AI provider to use for this command (e.g. `claude`, `codex`, `gemini`) |
-| `--model` | | Model name to pass to the provider (e.g. `claude-haiku-4-5`, `gpt-4o`) |
+| `--model` | `-m` | Model name to pass to the provider (e.g. `claude-haiku-4-5`, `gpt-4o`) |
+| `--cwd` | `-C` | Run as if started in the given directory |
 | `--version` | `-V` | Print version |
 | `--help` | `-h` | Print help |
 
