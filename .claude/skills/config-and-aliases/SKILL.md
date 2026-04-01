@@ -53,16 +53,12 @@ API keys and sensitive values support `$ENV_VAR` syntax in YAML config. Resolved
 - Project aliases replace global aliases of the same name entirely.
 - If no config exists at all, the tool should still work with built-in defaults. Don't error on missing config — suggest `sk config init`.
 
-## Positive/Negative Flag Pairs
+## Flag Conventions
 
-Boolean behavioral flags have both forms:
+- `-y` / `--yes` — skip interactive prompts, implies `-n 1`
+- `--dry-run` — preview output without side effects
+- `--color <auto|always|never>` — tri-state color control
+- `-d` / `--draft` — create as draft PR
+- `--body` — generate commit body
 
-| Positive | Negative | Default |
-|----------|----------|---------|
-| `--interactive` | `--no-interactive` | `--interactive` |
-| `--extended` | `--no-extended` | `--no-extended` |
-| `--auto` | `--no-auto` | `--no-auto` |
-| `--draft` | `--no-draft` | `--no-draft` |
-| `--color` | `--no-color` | `--color` |
-
-This is essential for alias override ergonomics.
+Boolean flags can be negated in alias expansions by appending contradicting flags (last-wins).
