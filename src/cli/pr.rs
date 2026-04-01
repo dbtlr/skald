@@ -1,15 +1,13 @@
 use crate::engine::config::schema::ResolvedConfig;
 use crate::engine::output::OutputFormat;
-use crate::engine::prompts::{PromptContext, mock_prompt_context, render_prompt, resolve_template};
+use crate::engine::prompts::{PromptContext, render_prompt, resolve_template};
 use crate::platform::{CreatePrRequest, PlatformAdapter, detect_platform};
 use crate::providers::{CliProvider, PrContent, PrContext, Provider, get_provider_config};
 use crate::vcs::git::GitAdapter;
 use crate::vcs::{DiffOptions, DiffResult, VcsAdapter};
 
 pub struct PrOptions {
-    pub show_prompt: bool,
-    pub auto: bool,
-    pub title_only: bool,
+    pub yes: bool,
     pub dry_run: bool,
     pub draft: bool,
     pub push: bool,
@@ -17,6 +15,7 @@ pub struct PrOptions {
     pub base: Option<String>,
     pub count: usize,
     pub context: Option<String>,
+    pub context_file: Option<std::path::PathBuf>,
     pub format: OutputFormat,
     pub is_tty: bool,
     pub provider_name: String,
@@ -76,6 +75,8 @@ fn generate_pr_contents(
     let system_template = resolve_template("system", None, None).unwrap_or_default();
     let system_msg = render_prompt(&system_template, &prompt_ctx).unwrap_or(system_template);
     let full_prompt = format!("{system_msg}\n\n{rendered_prompt}");
+
+    tracing::trace!(prompt = %full_prompt, "rendered PR prompt");
 
     let pr_ctx = PrContext {
         diff: diff_result.diff.clone(),
@@ -167,12 +168,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
     // 3. Get current branch
     let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
 
-    // 4. --show-prompt: render PR template with mock context and print
-    if opts.show_prompt {
-        return run_show_prompt(&branch, &config.language);
-    }
-
-    // 5. Resolve target branch: --base flag -> config.pr_target -> "main"
+    // 4. Resolve target branch: --base flag -> config.pr_target -> "main"
     let target = opts.base.clone().unwrap_or_else(|| config.pr_target.clone());
 
     // 6. Get branch diff and commit log using resolved source ref
@@ -204,17 +200,17 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         return 1;
     }
 
-    // 8. Determine effective mode (title_only implied by -n when not auto/dry-run)
-    let effective_title_only = opts.title_only || (opts.count != 3 && !opts.auto && !opts.dry_run);
+    // 8. Load context (flag or file)
+    let context = load_context(&opts.context, &opts.context_file);
 
     // 9. Generate PR contents via shared helper
-    let count = if opts.auto { 1 } else { opts.count };
+    let count = if opts.yes { 1 } else { opts.count };
     let contents = match generate_pr_contents(
         &branch,
         &target,
         &diff_result,
         &commit_log,
-        opts.context.as_deref(),
+        context.as_deref(),
         count,
         config,
         opts.is_tty,
@@ -225,12 +221,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         Err(code) => return code,
     };
 
-    // 10. title_only: render titles
-    if effective_title_only {
-        return render_titles(&contents, opts.format, opts.is_tty);
-    }
-
-    // 11. dry_run: render payload
+    // 10. dry_run: render payload
     if opts.dry_run {
         return render_dry_run(&contents, opts.format, opts.is_tty);
     }
@@ -255,8 +246,8 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         }
     };
 
-    // 13. auto: check existing PR, create PR
-    if opts.auto {
+    // 12. yes: check existing PR, create PR
+    if opts.yes {
         return create_pr(
             platform.as_ref(),
             &git,
@@ -356,13 +347,14 @@ fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i3
     }
 
     // 6. Generate content
-    let count = if opts.auto { 1 } else { opts.count };
+    let context = load_context(&opts.context, &opts.context_file);
+    let count = if opts.yes { 1 } else { opts.count };
     let contents = match generate_pr_contents(
         &branch,
         &target,
         &diff_result,
         &commit_log,
-        opts.context.as_deref(),
+        context.as_deref(),
         count,
         config,
         opts.is_tty,
@@ -378,13 +370,8 @@ fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i3
         return render_dry_run(&contents, opts.format, opts.is_tty);
     }
 
-    // 8. title_only: render titles and return
-    if opts.title_only {
-        return render_titles(&contents, opts.format, opts.is_tty);
-    }
-
-    // 9. auto: update directly
-    if opts.auto {
+    // 8. yes: update directly
+    if opts.yes {
         return do_update_pr(git, platform.as_ref(), &branch, &contents[0], opts.push, opts.is_tty);
     }
 
@@ -761,46 +748,23 @@ fn handle_context_regeneration(
     }
 }
 
-fn run_show_prompt(branch: &str, language: &str) -> i32 {
-    let ctx = mock_prompt_context().set("branch", branch).set("language", language);
-
-    match resolve_template("pr", None, None) {
-        Ok(template) => match render_prompt(&template, &ctx) {
-            Ok(rendered) => {
-                print!("{rendered}");
-                0
-            }
+fn load_context(context: &Option<String>, context_file: &Option<std::path::PathBuf>) -> Option<String> {
+    if let Some(ctx) = context {
+        return Some(ctx.clone());
+    }
+    if let Some(path) = context_file {
+        match std::fs::read_to_string(path) {
+            Ok(contents) => return Some(contents),
             Err(e) => {
-                cliclack::log::error(e.to_string()).ok();
-                1
-            }
-        },
-        Err(e) => {
-            cliclack::log::error(e.to_string()).ok();
-            1
-        }
-    }
-}
-
-fn render_titles(contents: &[PrContent], format: OutputFormat, is_tty: bool) -> i32 {
-    let titles: Vec<&str> = contents.iter().map(|c| c.title.as_str()).collect();
-    match format {
-        OutputFormat::Json => {
-            let json = if is_tty {
-                serde_json::to_string_pretty(&titles)
-            } else {
-                serde_json::to_string(&titles)
-            }
-            .unwrap_or_else(|_| "[]".to_string());
-            println!("{json}");
-        }
-        _ => {
-            for title in &titles {
-                println!("{title}");
+                cliclack::log::error(format!(
+                    "Failed to read context file '{}': {e}",
+                    path.display()
+                ))
+                .ok();
             }
         }
     }
-    0
+    None
 }
 
 fn render_dry_run(contents: &[PrContent], format: OutputFormat, is_tty: bool) -> i32 {
@@ -898,7 +862,7 @@ fn create_pr(
             // Check for unpushed commits and show hint
             if !push && let Ok(true) = git.has_unpushed_commits() {
                 cliclack::log::info(
-                    "You have unpushed commits. Use `sk pr --push --update` to push and update the PR.",
+                    "You have unpushed commits. Use `sk pr --push` to push and create/update the PR.",
                 )
                 .ok();
             }

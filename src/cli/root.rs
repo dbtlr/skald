@@ -3,6 +3,13 @@ use std::io::IsTerminal;
 use crate::engine::output::OutputFormat;
 use clap::Parser;
 
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum ColorWhen {
+    Auto,
+    Always,
+    Never,
+}
+
 #[derive(Parser, Debug)]
 #[command(
     name = "sk",
@@ -24,9 +31,9 @@ pub struct Cli {
     #[arg(short, long, global = true)]
     pub quiet: bool,
 
-    /// Disable color output
-    #[arg(long, global = true)]
-    pub no_color: bool,
+    /// When to use color output
+    #[arg(long, value_enum, default_value = "auto", global = true)]
+    pub color: ColorWhen,
 
     /// Output format
     #[arg(long, value_enum, global = true)]
@@ -37,11 +44,11 @@ pub struct Cli {
     pub provider: Option<String>,
 
     /// Model to use for AI generation
-    #[arg(long, global = true)]
+    #[arg(short = 'm', long, global = true)]
     pub model: Option<String>,
 
     /// Run as if started in <path>
-    #[arg(short = 'C', global = true, value_name = "PATH")]
+    #[arg(short = 'C', long = "cwd", global = true, value_name = "PATH")]
     pub directory: Option<std::path::PathBuf>,
 }
 
@@ -49,29 +56,23 @@ pub struct Cli {
 pub enum Command {
     /// Generate commit messages and commit
     Commit {
-        /// Render the prompt and print to stdout without calling AI
-        #[arg(long)]
-        show_prompt: bool,
-        /// Generate one message and commit immediately
-        #[arg(long)]
-        auto: bool,
-        /// Print messages to stdout without committing
-        #[arg(long)]
-        message_only: bool,
+        /// Generate one message and commit immediately (implies -n 1)
+        #[arg(short = 'y', long = "yes")]
+        yes: bool,
         /// Number of suggestions to generate
         #[arg(short = 'n', long = "num", default_value = "3")]
         count: usize,
         /// Stage tracked modified files before committing (git add -u)
-        #[arg(short = 'a')]
-        stage_tracked: bool,
-        /// Stage all files including untracked (git add -A)
-        #[arg(short = 'A', long = "all")]
-        stage_all: bool,
+        #[arg(short = 'a', long = "all")]
+        all: bool,
+        /// Also stage untracked files (implies -a)
+        #[arg(long)]
+        include_untracked: bool,
         /// Amend the previous commit
         #[arg(long)]
         amend: bool,
         /// Provide context about the changes
-        #[arg(long)]
+        #[arg(short = 'c', long)]
         context: Option<String>,
         /// Read context from a file
         #[arg(long)]
@@ -79,26 +80,20 @@ pub enum Command {
         /// Print what would be committed without executing
         #[arg(long)]
         dry_run: bool,
-        /// Generate extended description (commit body)
+        /// Generate commit body (multi-line description)
         #[arg(long)]
-        extended: bool,
+        body: bool,
     },
     /// Generate PR title and description
     Pr {
-        /// Render the prompt and print to stdout without calling AI
-        #[arg(long)]
-        show_prompt: bool,
-        /// Generate title + description and create PR immediately
-        #[arg(long)]
-        auto: bool,
-        /// Print title suggestions to stdout without creating PR
-        #[arg(long)]
-        title_only: bool,
+        /// Generate title + description and create PR immediately (implies -n 1)
+        #[arg(short = 'y', long = "yes")]
+        yes: bool,
         /// Print full PR payload without creating
         #[arg(long)]
         dry_run: bool,
         /// Create as draft PR
-        #[arg(long)]
+        #[arg(short = 'd', long)]
         draft: bool,
         /// Push current branch to remote before creating PR
         #[arg(long)]
@@ -107,31 +102,28 @@ pub enum Command {
         #[arg(long)]
         update: bool,
         /// Target branch
-        #[arg(long, short = 'b')]
+        #[arg(short = 'b', long)]
         base: Option<String>,
         /// Number of title suggestions
         #[arg(short = 'n', long = "num", default_value = "3")]
         count: usize,
         /// Provide context about the PR
-        #[arg(long, short = 'c')]
+        #[arg(short = 'c', long)]
         context: Option<String>,
+        /// Read context from a file
+        #[arg(long)]
+        context_file: Option<std::path::PathBuf>,
     },
     /// Generate merge request title and description (alias for pr)
     Mr {
-        /// Render the prompt and print to stdout without calling AI
-        #[arg(long)]
-        show_prompt: bool,
-        /// Generate title + description and create MR immediately
-        #[arg(long)]
-        auto: bool,
-        /// Print title suggestions to stdout without creating MR
-        #[arg(long)]
-        title_only: bool,
+        /// Generate title + description and create MR immediately (implies -n 1)
+        #[arg(short = 'y', long = "yes")]
+        yes: bool,
         /// Print full MR payload without creating
         #[arg(long)]
         dry_run: bool,
         /// Create as draft MR
-        #[arg(long)]
+        #[arg(short = 'd', long)]
         draft: bool,
         /// Push current branch to remote before creating MR
         #[arg(long)]
@@ -140,14 +132,17 @@ pub enum Command {
         #[arg(long)]
         update: bool,
         /// Target branch
-        #[arg(long, short = 'b')]
+        #[arg(short = 'b', long)]
         base: Option<String>,
         /// Number of title suggestions
         #[arg(short = 'n', long = "num", default_value = "3")]
         count: usize,
         /// Provide context about the MR
-        #[arg(long, short = 'c')]
+        #[arg(short = 'c', long)]
         context: Option<String>,
+        /// Read context from a file
+        #[arg(long)]
+        context_file: Option<std::path::PathBuf>,
     },
     /// View and manage configuration
     Config {
@@ -165,9 +160,9 @@ pub enum Command {
         /// Auto-fix all fixable issues
         #[arg(long)]
         fix: bool,
-        /// Run extended checks including live provider connectivity
+        /// Skip network connectivity checks
         #[arg(long)]
-        full: bool,
+        offline: bool,
     },
     /// Check for and install updates
     Upgrade {
@@ -181,13 +176,15 @@ pub enum Command {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
-    /// Output integration config snippets for external tools
+    /// Output integration config snippets for external tools (experimental)
+    #[cfg(feature = "integrations")]
     Integrations {
         #[command(subcommand)]
         target: Option<IntegrationTarget>,
     },
 }
 
+#[cfg(feature = "integrations")]
 #[derive(clap::Subcommand, Debug)]
 pub enum IntegrationTarget {
     /// Worktrunk commit message config
@@ -233,11 +230,7 @@ pub enum ConfigAction {
 #[derive(clap::Subcommand, Debug)]
 pub enum AliasAction {
     /// List all active aliases
-    List {
-        /// Show which config file each alias comes from
-        #[arg(long)]
-        source: bool,
-    },
+    List,
     /// Add a new alias
     Add {
         /// Alias name
@@ -248,7 +241,7 @@ pub enum AliasAction {
         #[arg(long)]
         project: bool,
         /// Overwrite an existing alias
-        #[arg(long)]
+        #[arg(short = 'f', long)]
         force: bool,
     },
     /// Remove an alias
@@ -270,12 +263,15 @@ impl Cli {
     }
 
     pub fn should_use_color(&self) -> bool {
-        if self.no_color {
-            return false;
+        match self.color {
+            ColorWhen::Always => true,
+            ColorWhen::Never => false,
+            ColorWhen::Auto => {
+                if std::env::var_os("NO_COLOR").is_some() {
+                    return false;
+                }
+                std::io::stdout().is_terminal()
+            }
         }
-        if std::env::var_os("NO_COLOR").is_some() {
-            return false;
-        }
-        std::io::stdout().is_terminal()
     }
 }

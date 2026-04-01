@@ -58,7 +58,7 @@ fn main() {
     tracing::debug!(
         verbose = cli.verbose,
         quiet = cli.quiet,
-        no_color = cli.no_color,
+        color = ?cli.color,
         format = ?cli.effective_format(),
         "skald starting"
     );
@@ -86,17 +86,15 @@ fn main() {
             0
         }
         Command::Commit {
-            show_prompt,
-            auto,
-            message_only,
+            yes,
             count,
-            stage_tracked,
-            stage_all,
+            all,
+            include_untracked,
             amend,
             context,
             context_file,
             dry_run,
-            extended,
+            body,
         } => {
             let config = match config_result {
                 Ok(ref cfg) => cfg,
@@ -107,17 +105,15 @@ fn main() {
             };
             cli::commit::run_commit(
                 cli::commit::CommitOptions {
-                    show_prompt,
-                    auto,
-                    message_only,
+                    yes,
                     count,
-                    stage_tracked,
-                    stage_all,
+                    all,
+                    include_untracked,
                     amend,
                     context,
                     context_file,
                     dry_run,
-                    extended,
+                    body,
                     format: fmt,
                     is_tty,
                     provider_name: provider_name.clone(),
@@ -127,9 +123,7 @@ fn main() {
             )
         }
         Command::Pr {
-            show_prompt,
-            auto,
-            title_only,
+            yes,
             dry_run,
             draft,
             push,
@@ -137,6 +131,7 @@ fn main() {
             base,
             count,
             context,
+            context_file,
         } => {
             let config = match config_result {
                 Ok(ref cfg) => cfg,
@@ -147,9 +142,7 @@ fn main() {
             };
             cli::pr::run_pr(
                 cli::pr::PrOptions {
-                    show_prompt,
-                    auto,
-                    title_only,
+                    yes,
                     dry_run,
                     draft,
                     push,
@@ -157,6 +150,7 @@ fn main() {
                     base,
                     count,
                     context,
+                    context_file,
                     format: fmt,
                     is_tty,
                     provider_name: provider_name.clone(),
@@ -166,9 +160,7 @@ fn main() {
             )
         }
         Command::Mr {
-            show_prompt,
-            auto,
-            title_only,
+            yes,
             dry_run,
             draft,
             push,
@@ -176,6 +168,7 @@ fn main() {
             base,
             count,
             context,
+            context_file,
         } => {
             let config = match config_result {
                 Ok(ref cfg) => cfg,
@@ -186,9 +179,7 @@ fn main() {
             };
             cli::pr::run_pr(
                 cli::pr::PrOptions {
-                    show_prompt,
-                    auto,
-                    title_only,
+                    yes,
                     dry_run,
                     draft,
                     push,
@@ -196,6 +187,7 @@ fn main() {
                     base,
                     count,
                     context,
+                    context_file,
                     format: fmt,
                     is_tty,
                     provider_name: provider_name.clone(),
@@ -225,8 +217,8 @@ fn main() {
         Command::Alias { action } => {
             use cli::AliasAction;
             match action {
-                AliasAction::List { source } => match config_result {
-                    Ok(ref cfg) => cli::aliases::run_list(cfg, fmt, is_tty, source),
+                AliasAction::List => match config_result {
+                    Ok(ref cfg) => cli::aliases::run_list(cfg, fmt, is_tty),
                     Err(ref e) => {
                         cliclack::log::error(format!("Failed to load config: {e}")).ok();
                         1
@@ -238,24 +230,28 @@ fn main() {
                 AliasAction::Remove { name, project } => cli::aliases::run_remove(&name, project),
             }
         }
-        Command::Doctor { fix, full } => cli::doctor::run_doctor(fix, full, fmt, is_tty),
+        Command::Doctor { fix, offline } => cli::doctor::run_doctor(fix, !offline, fmt, is_tty),
         Command::Upgrade { dry_run } => cli::upgrade::run_upgrade(dry_run),
+        #[cfg(feature = "integrations")]
         Command::Integrations { target } => cli::integrations::run_integrations(target),
     };
 
     process::exit(code);
 }
 
-/// Pre-scan raw args for `-C <path>` before clap parsing.
+/// Pre-scan raw args for `-C <path>` / `--cwd <path>` before clap parsing.
 /// Returns the path if found. This runs before config loading
 /// so that project config discovery uses the correct cwd.
 fn prescan_directory(args: &[String]) -> Option<std::path::PathBuf> {
     let mut iter = args.iter().skip(1); // skip binary name
     while let Some(arg) = iter.next() {
-        if arg == "-C" {
+        if arg == "-C" || arg == "--cwd" {
             return iter.next().map(std::path::PathBuf::from);
         }
         if let Some(path) = arg.strip_prefix("-C") {
+            return Some(std::path::PathBuf::from(path));
+        }
+        if let Some(path) = arg.strip_prefix("--cwd=") {
             return Some(std::path::PathBuf::from(path));
         }
     }

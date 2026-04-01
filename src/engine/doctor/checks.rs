@@ -207,8 +207,8 @@ fn check_provider_cli(name: &str, binary: &str, is_configured: bool) -> CheckRes
     }
 }
 
-pub fn provider_checks(full: bool, configured_provider: &str) -> Vec<CheckResult> {
-    debug!(full, configured_provider, "running provider checks");
+pub fn provider_checks(online: bool, configured_provider: &str) -> Vec<CheckResult> {
+    debug!(online, configured_provider, "running provider checks");
     let mut results = vec![];
 
     for &(name, binary) in KNOWN_PROVIDERS {
@@ -216,7 +216,7 @@ pub fn provider_checks(full: bool, configured_provider: &str) -> Vec<CheckResult
         results.push(check_provider_cli(name, binary, is_configured));
     }
 
-    if full {
+    if online {
         let test_result = Command::new(configured_provider)
             .args(["-p", "Reply with exactly: ok", "--max-turns", "1"])
             .output();

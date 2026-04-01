@@ -79,8 +79,8 @@ fn render_json(report: &DoctorReport, is_tty: bool) {
     println!("{output}");
 }
 
-pub fn run_doctor(fix: bool, full: bool, format: OutputFormat, is_tty: bool) -> i32 {
-    let report = run_checks(fix, full);
+pub fn run_doctor(fix: bool, online: bool, format: OutputFormat, is_tty: bool) -> i32 {
+    let report = run_checks(fix, online);
 
     match format {
         OutputFormat::Json => render_json(&report, is_tty),

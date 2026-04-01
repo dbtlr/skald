@@ -8,17 +8,15 @@ use crate::vcs::git::GitAdapter;
 use crate::vcs::{DiffOptions, StageMode, VcsAdapter};
 
 pub struct CommitOptions {
-    pub show_prompt: bool,
-    pub auto: bool,
-    pub message_only: bool,
+    pub yes: bool,
     pub count: usize,
-    pub stage_tracked: bool,
-    pub stage_all: bool,
+    pub all: bool,
+    pub include_untracked: bool,
     pub amend: bool,
     pub context: Option<String>,
     pub context_file: Option<PathBuf>,
     pub dry_run: bool,
-    pub extended: bool,
+    pub body: bool,
     pub format: OutputFormat,
     pub is_tty: bool,
     pub provider_name: String,
@@ -37,18 +35,13 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
 
     let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
 
-    // 2. show_prompt: render template with real branch but placeholder diff, print, exit
-    if opts.show_prompt {
-        return run_show_prompt(&branch, &config.language);
-    }
-
-    // 3. Stage if requested
-    if opts.stage_all {
+    // 2. Stage if requested
+    if opts.include_untracked {
         if let Err(e) = git.stage(StageMode::All) {
             cliclack::log::error(format!("Failed to stage files: {e}")).ok();
             return 1;
         }
-    } else if opts.stage_tracked
+    } else if opts.all
         && let Err(e) = git.stage(StageMode::Tracked)
     {
         cliclack::log::error(format!("Failed to stage files: {e}")).ok();
@@ -89,9 +82,6 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     // 6. Load context
     let context = load_context(&opts.context, &opts.context_file);
 
-    // 7. Determine effective mode — message_only if explicit or if -n given without --auto
-    let effective_message_only = opts.message_only || (opts.count != 3 && !opts.auto);
-
     // 8. Build PromptContext
     let files_changed = extract_files_from_stat(&diff_result.stat);
     let prompt_ctx = PromptContext::new()
@@ -124,6 +114,8 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     let system_msg = render_prompt(&system_template, &prompt_ctx).unwrap_or(system_template);
     let full_prompt = format!("{system_msg}\n\n{rendered_prompt}");
 
+    tracing::trace!(prompt = %full_prompt, "rendered commit prompt");
+
     // 11. Build CommitContext
     let commit_ctx = CommitContext {
         diff: diff_result.diff.clone(),
@@ -148,7 +140,7 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     let provider = CliProvider::new(provider_config, opts.model.clone());
 
     // 13. Show spinner, call provider
-    let count = if opts.auto { 1 } else { opts.count };
+    let count = if opts.yes { 1 } else { opts.count };
 
     let sp = if opts.is_tty {
         let s = cliclack::spinner();
@@ -190,15 +182,15 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
         return 1;
     }
 
-    // 14. message_only mode: print messages and exit
-    if effective_message_only {
+    // 14. dry_run mode: print messages and exit
+    if opts.dry_run {
         return render_messages(&messages, opts.format, opts.is_tty);
     }
 
-    // 15. auto mode: take first message, commit (or amend)
-    if opts.auto {
+    // 15. yes mode: take first message, commit (or amend)
+    if opts.yes {
         let msg = &messages[0];
-        if opts.extended {
+        if opts.body {
             if let Some(body) = generate_body(
                 msg,
                 &diff_result.stat,
@@ -211,12 +203,12 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
             ) {
                 return do_commit_with_body(&git, msg, &body, opts.amend, opts.dry_run);
             }
-            cliclack::log::warning("Extended description failed, committing with title only.").ok();
+            cliclack::log::warning("Body generation failed, committing with title only.").ok();
         }
-        return do_commit(&git, msg, opts.amend, opts.dry_run);
+        return do_commit(&git, msg, opts.amend, false);
     }
 
-    // 16. Interactive mode (default — no --auto or --message-only)
+    // 16. Interactive mode
     let mut state = InteractiveState {
         messages,
         git: &git,
@@ -257,7 +249,7 @@ fn handle_no_staged_changes(git: &GitAdapter, is_tty: bool) -> Option<i32> {
     // Non-interactive: can't prompt, just tell the user what to do.
     if !is_tty {
         cliclack::log::error(
-            "No staged changes found. Use `-a` to stage tracked files or `-A` to stage all.",
+            "No staged changes found. Use `-a`/`--all` to stage tracked files or `--include-untracked` to include new files.",
         )
         .ok();
         return Some(1);
@@ -265,8 +257,8 @@ fn handle_no_staged_changes(git: &GitAdapter, is_tty: bool) -> Option<i32> {
 
     // Interactive: offer to stage.
     let selection = cliclack::select("No staged changes. How would you like to proceed?")
-        .item("all", "Stage all (-A)", "includes untracked files")
-        .item("tracked", "Stage tracked (-a)", "only already-tracked files")
+        .item("all", "Stage all (--include-untracked)", "includes untracked files")
+        .item("tracked", "Stage tracked (-a/--all)", "only already-tracked files")
         .item("abort", "Abort", "")
         .interact();
 
@@ -288,33 +280,6 @@ fn handle_no_staged_changes(git: &GitAdapter, is_tty: bool) -> Option<i32> {
         Ok(_) | Err(_) => {
             // "abort" or cancelled
             Some(130)
-        }
-    }
-}
-
-fn run_show_prompt(branch: &str, language: &str) -> i32 {
-    let ctx = PromptContext::new()
-        .set("branch", branch)
-        .set("diff_stat", "<diff will appear here at generation time>")
-        .set("context", "")
-        .set("language", language)
-        .set("num_suggestions", "3")
-        .set("files_changed", "<files will appear here>");
-
-    match resolve_template("commit-title", None, None) {
-        Ok(template) => match render_prompt(&template, &ctx) {
-            Ok(rendered) => {
-                print!("{rendered}");
-                0
-            }
-            Err(e) => {
-                cliclack::log::error(e.to_string()).ok();
-                1
-            }
-        },
-        Err(e) => {
-            cliclack::log::error(e.to_string()).ok();
-            1
         }
     }
 }

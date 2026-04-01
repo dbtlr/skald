@@ -32,6 +32,7 @@ impl Default for PromptContext {
     }
 }
 
+#[cfg(test)]
 pub fn mock_prompt_context() -> PromptContext {
     PromptContext::new()
         .set("branch", "feature/add-oauth")
