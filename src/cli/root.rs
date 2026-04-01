@@ -98,9 +98,6 @@ pub enum Command {
         /// Push current branch to remote before creating PR
         #[arg(long)]
         push: bool,
-        /// Update existing PR title and description
-        #[arg(long)]
-        update: bool,
         /// Target branch
         #[arg(short = 'b', long)]
         base: Option<String>,
@@ -128,9 +125,6 @@ pub enum Command {
         /// Push current branch to remote before creating MR
         #[arg(long)]
         push: bool,
-        /// Update existing MR title and description
-        #[arg(long)]
-        update: bool,
         /// Target branch
         #[arg(short = 'b', long)]
         base: Option<String>,

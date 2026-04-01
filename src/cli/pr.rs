@@ -11,7 +11,6 @@ pub struct PrOptions {
     pub dry_run: bool,
     pub draft: bool,
     pub push: bool,
-    pub update: bool,
     pub base: Option<String>,
     pub count: usize,
     pub context: Option<String>,
@@ -144,19 +143,7 @@ fn generate_pr_contents(
 }
 
 pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
-    // 1. --update: delegate to run_update
-    if opts.update {
-        let git = match GitAdapter::detect() {
-            Ok(g) => g,
-            Err(e) => {
-                cliclack::log::error(format!("Not in a git repository: {e}")).ok();
-                return 1;
-            }
-        };
-        return run_update(&git, &opts, config);
-    }
-
-    // 2. Detect git repo
+    // 1. Detect git repo
     let git = match GitAdapter::detect() {
         Ok(g) => g,
         Err(e) => {
@@ -165,13 +152,49 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         }
     };
 
-    // 3. Get current branch
+    // 2. Get current branch
     let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
 
-    // 4. Resolve target branch: --base flag -> config.pr_target -> "main"
-    let target = opts.base.clone().unwrap_or_else(|| config.pr_target.clone());
+    // 3. Detect platform early — needed to check for existing PR
+    let remote_url = match git.get_remote_url() {
+        Ok(url) => url,
+        Err(e) => {
+            cliclack::log::error(format!("Failed to get remote URL: {e}")).ok();
+            return 1;
+        }
+    };
 
-    // 6. Get branch diff and commit log using resolved source ref
+    let platform = match detect_platform(&remote_url, Some(config.platform.as_str())) {
+        Some(p) => p,
+        None => {
+            cliclack::log::error(
+                "Could not detect platform from remote URL. Set `platform: github` or `platform: gitlab` in your config.",
+            )
+            .ok();
+            return 1;
+        }
+    };
+
+    // 4. Check for existing PR — determines create vs update behavior
+    let label = platform.pr_label();
+    let existing_pr = match platform.pr_exists(&branch) {
+        Ok(pr) => pr,
+        Err(e) => {
+            cliclack::log::error(format!("Failed to check for existing {label}: {e}")).ok();
+            return 1;
+        }
+    };
+    let is_update = existing_pr.is_some();
+
+    // 5. Resolve target branch: --base flag -> existing PR base -> config -> "main"
+    let target = opts.base.clone().unwrap_or_else(|| {
+        existing_pr
+            .as_ref()
+            .map(|pr| pr.base_branch.clone())
+            .unwrap_or_else(|| config.pr_target.clone())
+    });
+
+    // 6. Get branch diff and commit log
     let source = resolve_source_ref(&git, opts.push);
 
     let diff_result = match git.get_branch_diff(
@@ -194,16 +217,13 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         }
     };
 
-    // 7. If commit log is empty, error
     if commit_log.trim().is_empty() {
         cliclack::log::error(format!("No commits found ahead of '{target}'.")).ok();
         return 1;
     }
 
-    // 8. Load context (flag or file)
+    // 7. Load context and generate PR contents
     let context = load_context(&opts.context, &opts.context_file);
-
-    // 9. Generate PR contents via shared helper
     let count = if opts.yes { 1 } else { opts.count };
     let contents = match generate_pr_contents(
         &branch,
@@ -221,33 +241,23 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         Err(code) => return code,
     };
 
-    // 10. dry_run: render payload
+    // 8. dry_run: render payload
     if opts.dry_run {
         return render_dry_run(&contents, opts.format, opts.is_tty);
     }
 
-    // 12. Detect platform (needed for auto and interactive modes)
-    let remote_url = match git.get_remote_url() {
-        Ok(url) => url,
-        Err(e) => {
-            cliclack::log::error(format!("Failed to get remote URL: {e}")).ok();
-            return 1;
-        }
-    };
-
-    let platform = match detect_platform(&remote_url, Some(config.platform.as_str())) {
-        Some(p) => p,
-        None => {
-            cliclack::log::error(
-                "Could not detect platform from remote URL. Set `platform: github` or `platform: gitlab` in your config.",
-            )
-            .ok();
-            return 1;
-        }
-    };
-
-    // 12. yes: check existing PR, create PR
+    // 9. yes mode: auto-create or auto-update
     if opts.yes {
+        if is_update {
+            return do_update_pr(
+                &git,
+                platform.as_ref(),
+                &branch,
+                &contents[0],
+                opts.push,
+                opts.is_tty,
+            );
+        }
         return create_pr(
             platform.as_ref(),
             &git,
@@ -259,7 +269,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         );
     }
 
-    // 14. Interactive mode (bare `sk pr`)
+    // 10. Interactive mode — pass is_update so the UI offers the right actions
     run_interactive_pr(
         &git,
         platform.as_ref(),
@@ -270,123 +280,7 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         contents,
         &opts,
         config,
-        false,
-    )
-}
-
-fn run_update(git: &GitAdapter, opts: &PrOptions, config: &ResolvedConfig) -> i32 {
-    // 1. Get branch and detect platform
-    let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
-
-    let remote_url = match git.get_remote_url() {
-        Ok(url) => url,
-        Err(e) => {
-            cliclack::log::error(format!("Failed to get remote URL: {e}")).ok();
-            return 1;
-        }
-    };
-
-    let platform = match detect_platform(&remote_url, Some(config.platform.as_str())) {
-        Some(p) => p,
-        None => {
-            cliclack::log::error(
-                "Could not detect platform from remote URL. Set `platform: github` or `platform: gitlab` in your config.",
-            )
-            .ok();
-            return 1;
-        }
-    };
-
-    // 2. Check PR exists
-    let label = platform.pr_label();
-    let existing = match platform.pr_exists(&branch) {
-        Ok(Some(pr)) => pr,
-        Ok(None) => {
-            cliclack::log::error(format!(
-                "No open {label} found for branch '{branch}'. Use `sk pr` to create one first."
-            ))
-            .ok();
-            return 1;
-        }
-        Err(e) => {
-            cliclack::log::error(format!("Failed to check for existing {label}: {e}")).ok();
-            return 1;
-        }
-    };
-
-    // 3. Resolve target from --base flag or existing PR's base branch
-    let target = opts.base.clone().unwrap_or_else(|| existing.base_branch.clone());
-
-    // 4. Resolve source ref
-    let source = resolve_source_ref(git, opts.push);
-
-    // 5. Get diff and commit log
-    let diff_result = match git.get_branch_diff(
-        &target,
-        &source,
-        &DiffOptions { staged: false, exclude_patterns: vec![] },
-    ) {
-        Ok(d) => d,
-        Err(e) => {
-            cliclack::log::error(format!("Failed to get branch diff: {e}")).ok();
-            return 1;
-        }
-    };
-
-    let commit_log = match git.get_commit_log(&target, &source) {
-        Ok(log) => log,
-        Err(e) => {
-            cliclack::log::error(format!("Failed to get commit log: {e}")).ok();
-            return 1;
-        }
-    };
-
-    if commit_log.trim().is_empty() {
-        cliclack::log::error(format!("No commits found ahead of '{target}'.")).ok();
-        return 1;
-    }
-
-    // 6. Generate content
-    let context = load_context(&opts.context, &opts.context_file);
-    let count = if opts.yes { 1 } else { opts.count };
-    let contents = match generate_pr_contents(
-        &branch,
-        &target,
-        &diff_result,
-        &commit_log,
-        context.as_deref(),
-        count,
-        config,
-        opts.is_tty,
-        &opts.provider_name,
-        opts.model.clone(),
-    ) {
-        Ok(c) => c,
-        Err(code) => return code,
-    };
-
-    // 7. dry_run: render and return
-    if opts.dry_run {
-        return render_dry_run(&contents, opts.format, opts.is_tty);
-    }
-
-    // 8. yes: update directly
-    if opts.yes {
-        return do_update_pr(git, platform.as_ref(), &branch, &contents[0], opts.push, opts.is_tty);
-    }
-
-    // 10. Interactive flow with is_update=true
-    run_interactive_pr(
-        git,
-        platform.as_ref(),
-        &branch,
-        &target,
-        &diff_result,
-        &commit_log,
-        contents,
-        opts,
-        config,
-        true,
+        is_update,
     )
 }
 
@@ -813,26 +707,8 @@ fn create_pr(
     push: bool,
     is_tty: bool,
 ) -> i32 {
-    let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
     let label = platform.pr_label();
     let prefix = platform.pr_prefix();
-
-    // Check for existing PR
-    match platform.pr_exists(&branch) {
-        Ok(Some(existing)) => {
-            cliclack::log::warning(format!(
-                "{label} {prefix}{} already exists for branch '{branch}': {}",
-                existing.number, existing.url
-            ))
-            .ok();
-            return 0;
-        }
-        Ok(None) => {}
-        Err(e) => {
-            cliclack::log::error(format!("Failed to check for existing {label}: {e}")).ok();
-            return 1;
-        }
-    }
 
     // Create the PR
     let sp = if is_tty {

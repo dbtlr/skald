@@ -707,11 +707,11 @@ fn generate_body(
 /// Stage files for real if deferred staging was used.
 /// Returns `Some(exit_code)` on failure, `None` on success.
 fn apply_deferred_stage(git: &GitAdapter, deferred_stage: Option<StageMode>) -> Option<i32> {
-    if let Some(mode) = deferred_stage {
-        if let Err(e) = git.stage(mode) {
-            cliclack::log::error(format!("Failed to stage files: {e}")).ok();
-            return Some(1);
-        }
+    if let Some(mode) = deferred_stage
+        && let Err(e) = git.stage(mode)
+    {
+        cliclack::log::error(format!("Failed to stage files: {e}")).ok();
+        return Some(1);
     }
     None
 }
