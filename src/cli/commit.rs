@@ -35,47 +35,69 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
 
     let branch = git.get_current_branch().unwrap_or_else(|_| "HEAD".to_string());
 
-    // 2. Stage if requested
-    if opts.include_untracked {
-        if let Err(e) = git.stage(StageMode::All) {
-            cliclack::log::error(format!("Failed to stage files: {e}")).ok();
-            return 1;
-        }
-    } else if opts.all
-        && let Err(e) = git.stage(StageMode::Tracked)
-    {
-        cliclack::log::error(format!("Failed to stage files: {e}")).ok();
-        return 1;
-    }
+    // 2. Determine staging mode — deferred staging uses a temp index so
+    //    cancellation leaves the real index untouched.
+    let deferred_stage = if opts.include_untracked {
+        Some(StageMode::All)
+    } else if opts.all {
+        Some(StageMode::Tracked)
+    } else {
+        None
+    };
 
-    // 4. Check for staged changes
-    match git.has_staged_changes() {
-        Ok(false) => {
-            if let Some(code) = handle_no_staged_changes(&git, opts.is_tty) {
-                return code;
-            }
-            // Verify staging actually produced changes
-            match git.has_staged_changes() {
-                Ok(true) => {}
-                _ => {
-                    cliclack::log::error("Still no staged changes after staging.").ok();
-                    return 1;
+    let diff_options = DiffOptions { staged: true, exclude_patterns: vec![] };
+
+    // 3. Get diff — either from real index or previewed via temp index
+    let diff_result = if let Some(mode) = deferred_stage {
+        match git.preview_staged_diff(mode, &diff_options) {
+            Ok(d) if d.diff.is_empty() => {
+                // Preview found nothing to stage
+                if let Some(code) = handle_no_staged_changes(&git, opts.is_tty) {
+                    return code;
+                }
+                // User chose to stage interactively — now get the real diff
+                match git.get_diff(&diff_options) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        cliclack::log::error(format!("Failed to get diff: {e}")).ok();
+                        return 1;
+                    }
                 }
             }
+            Ok(d) => d,
+            Err(e) => {
+                cliclack::log::error(format!("Failed to preview staging: {e}")).ok();
+                return 1;
+            }
         }
-        Err(e) => {
-            cliclack::log::error(format!("Failed to check staged changes: {e}")).ok();
-            return 1;
+    } else {
+        // No -a / --include-untracked — check real staged changes
+        match git.has_staged_changes() {
+            Ok(false) => {
+                if let Some(code) = handle_no_staged_changes(&git, opts.is_tty) {
+                    return code;
+                }
+                // Verify staging actually produced changes
+                match git.has_staged_changes() {
+                    Ok(true) => {}
+                    _ => {
+                        cliclack::log::error("Still no staged changes after staging.").ok();
+                        return 1;
+                    }
+                }
+            }
+            Err(e) => {
+                cliclack::log::error(format!("Failed to check staged changes: {e}")).ok();
+                return 1;
+            }
+            Ok(true) => {}
         }
-        Ok(true) => {}
-    }
-
-    // 5. Get diff (staged)
-    let diff_result = match git.get_diff(&DiffOptions { staged: true, exclude_patterns: vec![] }) {
-        Ok(d) => d,
-        Err(e) => {
-            cliclack::log::error(format!("Failed to get diff: {e}")).ok();
-            return 1;
+        match git.get_diff(&diff_options) {
+            Ok(d) => d,
+            Err(e) => {
+                cliclack::log::error(format!("Failed to get diff: {e}")).ok();
+                return 1;
+            }
         }
     };
 
@@ -201,11 +223,18 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
                 &rt,
                 opts.is_tty,
             ) {
-                return do_commit_with_body(&git, msg, &body, opts.amend, opts.dry_run);
+                return do_commit_with_body(
+                    &git,
+                    msg,
+                    &body,
+                    opts.amend,
+                    opts.dry_run,
+                    deferred_stage,
+                );
             }
             cliclack::log::warning("Body generation failed, committing with title only.").ok();
         }
-        return do_commit(&git, msg, opts.amend, false);
+        return do_commit(&git, msg, opts.amend, false, deferred_stage);
     }
 
     // 16. Interactive mode
@@ -223,6 +252,7 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
         amend: opts.amend,
         dry_run: opts.dry_run,
         is_tty: opts.is_tty,
+        deferred_stage,
     };
     run_interactive(&mut state)
 }
@@ -332,6 +362,7 @@ struct InteractiveState<'a> {
     amend: bool,
     dry_run: bool,
     is_tty: bool,
+    deferred_stage: Option<StageMode>,
 }
 
 fn run_interactive(state: &mut InteractiveState) -> i32 {
@@ -348,7 +379,13 @@ fn run_interactive(state: &mut InteractiveState) -> i32 {
 
         match result {
             CarouselResult::Accept(idx) => {
-                return do_commit(state.git, &state.messages[idx], state.amend, state.dry_run);
+                return do_commit(
+                    state.git,
+                    &state.messages[idx],
+                    state.amend,
+                    state.dry_run,
+                    state.deferred_stage,
+                );
             }
             CarouselResult::Edit(idx) => {
                 let edited: Result<String, _> = cliclack::input("Edit commit message:")
@@ -356,7 +393,13 @@ fn run_interactive(state: &mut InteractiveState) -> i32 {
                     .interact();
                 match edited {
                     Ok(msg) if !msg.is_empty() => {
-                        return do_commit(state.git, &msg, state.amend, state.dry_run);
+                        return do_commit(
+                            state.git,
+                            &msg,
+                            state.amend,
+                            state.dry_run,
+                            state.deferred_stage,
+                        );
                     }
                     Ok(_) => {
                         cliclack::log::warning("Empty message — returning to carousel.").ok();
@@ -387,7 +430,13 @@ fn run_interactive(state: &mut InteractiveState) -> i32 {
 
                 match choice {
                     Ok("accept") => {
-                        return do_commit(state.git, &state.messages[idx], false, state.dry_run);
+                        return do_commit(
+                            state.git,
+                            &state.messages[idx],
+                            false,
+                            state.dry_run,
+                            state.deferred_stage,
+                        );
                     }
                     Ok("extend") => {
                         let code = handle_extend(state, idx);
@@ -401,7 +450,13 @@ fn run_interactive(state: &mut InteractiveState) -> i32 {
                         continue;
                     }
                     Ok("amend") => {
-                        return do_commit(state.git, &state.messages[idx], true, state.dry_run);
+                        return do_commit(
+                            state.git,
+                            &state.messages[idx],
+                            true,
+                            state.dry_run,
+                            state.deferred_stage,
+                        );
                     }
                     Ok("abort") | Err(_) => {
                         cliclack::log::info("Aborted.").ok();
@@ -450,9 +505,14 @@ fn handle_extend(state: &InteractiveState, idx: usize) -> Option<i32> {
         .interact();
 
     match choice {
-        Ok("accept") => {
-            Some(do_commit_with_body(state.git, title, &body, state.amend, state.dry_run))
-        }
+        Ok("accept") => Some(do_commit_with_body(
+            state.git,
+            title,
+            &body,
+            state.amend,
+            state.dry_run,
+            state.deferred_stage,
+        )),
         Ok("edit") => {
             let edited: Result<String, _> =
                 cliclack::input("Edit description:").default_input(&body).interact();
@@ -463,6 +523,7 @@ fn handle_extend(state: &InteractiveState, idx: usize) -> Option<i32> {
                     &edited_body,
                     state.amend,
                     state.dry_run,
+                    state.deferred_stage,
                 )),
                 Ok(_) => {
                     cliclack::log::warning("Empty body — returning to carousel.").ok();
@@ -643,16 +704,33 @@ fn generate_body(
     }
 }
 
+/// Stage files for real if deferred staging was used.
+/// Returns `Some(exit_code)` on failure, `None` on success.
+fn apply_deferred_stage(git: &GitAdapter, deferred_stage: Option<StageMode>) -> Option<i32> {
+    if let Some(mode) = deferred_stage {
+        if let Err(e) = git.stage(mode) {
+            cliclack::log::error(format!("Failed to stage files: {e}")).ok();
+            return Some(1);
+        }
+    }
+    None
+}
+
 fn do_commit_with_body(
     git: &GitAdapter,
     title: &str,
     body: &str,
     amend: bool,
     dry_run: bool,
+    deferred_stage: Option<StageMode>,
 ) -> i32 {
     if dry_run {
         cliclack::log::info(format!("Would commit:\n  Title: {title}\n  Body:\n{body}")).ok();
         return 0;
+    }
+
+    if let Some(code) = apply_deferred_stage(git, deferred_stage) {
+        return code;
     }
 
     let result = if amend {
@@ -675,10 +753,20 @@ fn do_commit_with_body(
     }
 }
 
-fn do_commit(git: &GitAdapter, message: &str, amend: bool, dry_run: bool) -> i32 {
+fn do_commit(
+    git: &GitAdapter,
+    message: &str,
+    amend: bool,
+    dry_run: bool,
+    deferred_stage: Option<StageMode>,
+) -> i32 {
     if dry_run {
         cliclack::log::info(format!("Would commit: {message}")).ok();
         return 0;
+    }
+
+    if let Some(code) = apply_deferred_stage(git, deferred_stage) {
+        return code;
     }
 
     let result = if amend { git.commit_amend(message) } else { git.commit(message) };

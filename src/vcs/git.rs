@@ -74,6 +74,103 @@ pub fn parse_stat_summary(stat: &str) -> (usize, usize, usize) {
     (files, insertions, deletions)
 }
 
+impl GitAdapter {
+    /// Run a git command with a custom environment variable set.
+    fn run_git_with_env(
+        &self,
+        args: &[&str],
+        env_key: &str,
+        env_val: &str,
+    ) -> Result<String, VcsError> {
+        let mut cmd = Command::new("git");
+        cmd.args(args).env(env_key, env_val);
+        if let Some(root) = &self.root {
+            cmd.current_dir(root);
+        }
+        let output =
+            cmd.output().map_err(|e| VcsError::CommandFailed(format!("failed to run git: {e}")))?;
+
+        if output.status.success() {
+            Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            Err(VcsError::CommandFailed(stderr))
+        }
+    }
+
+    /// Compute the staged diff that *would* result from staging, without
+    /// modifying the real index. Uses a temporary copy of the git index.
+    ///
+    /// Returns the `DiffResult` and whether changes exist.
+    pub fn preview_staged_diff(
+        &self,
+        mode: StageMode,
+        options: &DiffOptions,
+    ) -> Result<DiffResult, VcsError> {
+        use std::fs;
+
+        // 1. Locate the real index
+        let index_path = self
+            .run_git(&["rev-parse", "--git-dir"])
+            .map(|dir| PathBuf::from(dir).join("index"))?;
+
+        // 2. Copy to a temp file
+        let tmp_dir = tempfile::tempdir()
+            .map_err(|e| VcsError::CommandFailed(format!("failed to create temp dir: {e}")))?;
+        let tmp_index = tmp_dir.path().join("index");
+        fs::copy(&index_path, &tmp_index)
+            .map_err(|e| VcsError::CommandFailed(format!("failed to copy index: {e}")))?;
+
+        let tmp_index_str = tmp_index.to_string_lossy();
+
+        // 3. Stage into the temp index
+        let flag = match mode {
+            StageMode::Tracked => "-u",
+            StageMode::All => "-A",
+        };
+        self.run_git_with_env(&["add", flag], "GIT_INDEX_FILE", &tmp_index_str)?;
+
+        // 4. Check if there are any staged changes in the temp index
+        let has_changes = {
+            let mut cmd = Command::new("git");
+            cmd.args(["diff", "--cached", "--quiet"]).env("GIT_INDEX_FILE", tmp_index_str.as_ref());
+            if let Some(root) = &self.root {
+                cmd.current_dir(root);
+            }
+            let output = cmd
+                .output()
+                .map_err(|e| VcsError::CommandFailed(format!("failed to run git: {e}")))?;
+            !output.status.success()
+        };
+
+        if !has_changes {
+            // No changes — return empty diff
+            return Ok(DiffResult {
+                diff: String::new(),
+                stat: String::new(),
+                files_changed: 0,
+                insertions: 0,
+                deletions: 0,
+            });
+        }
+
+        // 5. Get diff from the temp index
+        let raw_diff =
+            self.run_git_with_env(&["diff", "--cached"], "GIT_INDEX_FILE", &tmp_index_str)?;
+        let diff = crate::vcs::diff_filter::filter_diff(&raw_diff, &options.exclude_patterns, true);
+
+        let stat = self.run_git_with_env(
+            &["diff", "--cached", "--stat"],
+            "GIT_INDEX_FILE",
+            &tmp_index_str,
+        )?;
+        let (files_changed, insertions, deletions) = parse_stat_summary(&stat);
+
+        // 6. Temp dir drops automatically, cleaning up the temp index
+        Ok(DiffResult { diff, stat, files_changed, insertions, deletions })
+    }
+}
+
 impl VcsAdapter for GitAdapter {
     fn name(&self) -> &str {
         "git"
