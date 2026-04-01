@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.3 — 2026-03-31
+
+### Fixed
+- `sk upgrade` now uses correct cargo-dist artifact filenames (`skald-cli-{target}.tar.xz`)
+- Auth failures now show actionable message ("claude is not authenticated. Run `claude` to log in.") instead of cryptic exit code
+- Removed `--bare` flag from claude CLI invocation — it required a direct Anthropic API key instead of normal Claude Code auth
+
 ## v0.3.2 — 2026-03-31
 
 ### Added
