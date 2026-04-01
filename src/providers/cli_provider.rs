@@ -51,10 +51,34 @@ impl CliProvider {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            warn!(%stderr, "{} CLI returned non-zero exit status", self.config.name);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let combined = format!("{stderr}{stdout}");
+            warn!(%stderr, %stdout, "{} CLI returned non-zero exit status", self.config.name);
+
+            // Detect auth failures and give actionable guidance
+            let combined_lower = combined.to_lowercase();
+            if combined_lower.contains("not logged in")
+                || combined_lower.contains("authentication")
+                || combined_lower.contains("unauthorized")
+                || combined_lower.contains("login")
+            {
+                return Err(ProviderError::Unavailable {
+                    provider: self.config.name.into(),
+                    detail: format!(
+                        "{} is not authenticated. Run `{}` to log in.",
+                        self.config.binary, self.config.binary
+                    ),
+                });
+            }
+
             return Err(ProviderError::Generation {
                 provider: self.config.name.into(),
-                detail: format!("{} exited with {}: {stderr}", self.config.binary, output.status),
+                detail: format!(
+                    "{} exited with {}: {}",
+                    self.config.binary,
+                    output.status,
+                    combined.trim()
+                ),
             });
         }
 
