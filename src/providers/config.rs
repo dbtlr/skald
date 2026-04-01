@@ -13,7 +13,7 @@ static CLAUDE: CliProviderConfig = CliProviderConfig {
     name: "claude",
     binary: "claude",
     prompt_args: &["-p"],
-    tool_args: &["--allowedTools", "Read", "--bare"],
+    tool_args: &["--allowedTools", "Read"],
     model_flag: "--model",
 };
 
@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(config.name, "claude");
         assert_eq!(config.binary, "claude");
         assert_eq!(config.prompt_args, &["-p"]);
-        assert_eq!(config.tool_args, &["--allowedTools", "Read", "--bare"]);
+        assert_eq!(config.tool_args, &["--allowedTools", "Read"]);
         assert_eq!(config.model_flag, "--model");
     }
 
