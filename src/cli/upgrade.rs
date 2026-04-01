@@ -95,7 +95,7 @@ pub fn run_upgrade(dry_run: bool) -> i32 {
         }
     };
 
-    let decoder = flate2::read::GzDecoder::new(&body[..]);
+    let decoder = xz2::read::XzDecoder::new(&body[..]);
     let mut archive = tar::Archive::new(decoder);
     if let Err(e) = archive.unpack(tmpdir.path()) {
         extract_spinner.stop("Extract failed");

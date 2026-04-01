@@ -90,8 +90,8 @@ pub fn current_target() -> Option<&'static str> {
 /// Build the download URL for a given release tag.
 pub fn build_download_url(tag: &str) -> String {
     let target = current_target().unwrap_or("unknown");
-    let ext = if cfg!(target_os = "windows") { "zip" } else { "tar.gz" };
-    format!("https://github.com/dbtlr/skald/releases/download/{tag}/sk-{target}.{ext}")
+    let ext = if cfg!(target_os = "windows") { "zip" } else { "tar.xz" };
+    format!("https://github.com/dbtlr/skald/releases/download/{tag}/skald-cli-{target}.{ext}")
 }
 
 #[cfg(test)]
@@ -130,9 +130,13 @@ mod tests {
         let target = current_target().unwrap();
         assert_eq!(
             url,
-            format!("https://github.com/dbtlr/skald/releases/download/v0.2.0/sk-{target}.tar.gz")
+            format!(
+                "https://github.com/dbtlr/skald/releases/download/v0.2.0/skald-cli-{target}.tar.xz"
+            )
         );
-        assert!(url.starts_with("https://github.com/dbtlr/skald/releases/download/v0.2.0/sk-"));
-        assert!(url.ends_with(".tar.gz") || url.ends_with(".zip"));
+        assert!(
+            url.starts_with("https://github.com/dbtlr/skald/releases/download/v0.2.0/skald-cli-")
+        );
+        assert!(url.ends_with(".tar.xz") || url.ends_with(".zip"));
     }
 }
