@@ -1,6 +1,17 @@
 {
   "updated": "2026-03-31",
   "providers": {
+    "anthropic": {
+      "recommended": "claude-sonnet-4",
+      "models": [
+        "claude-sonnet-4",
+        "claude-opus-4",
+        "claude-haiku-4-5",
+        "claude-sonnet-4-20250514",
+        "claude-opus-4-20250514",
+        "claude-haiku-4-5-20251001"
+      ]
+    },
     "claude": {
       "recommended": "claude-haiku-4-5",
       "models": [

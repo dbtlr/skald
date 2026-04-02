@@ -153,9 +153,9 @@ mod tests {
     }
 
     #[test]
-    fn all_four_providers_present() {
+    fn all_providers_present() {
         let list = fallback_models();
-        for provider in &["claude", "codex", "gemini", "copilot"] {
+        for provider in &["anthropic", "claude", "codex", "gemini", "copilot"] {
             assert!(list.providers.contains_key(*provider), "missing provider: {provider}");
         }
     }
