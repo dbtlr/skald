@@ -8,8 +8,6 @@ pub mod resolve;
 
 pub use anthropic::AnthropicProvider;
 pub use cli_provider::CliProvider;
-pub use config::{available_provider_names, get_provider_config};
-
 use crate::engine::config::schema::ResolvedConfig;
 
 /// Create a provider instance based on provider name.
