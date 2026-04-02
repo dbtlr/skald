@@ -47,6 +47,14 @@ pub struct Cli {
     #[arg(short = 'm', long, global = true)]
     pub model: Option<String>,
 
+    /// API key for direct API providers (ignored by CLI providers)
+    #[arg(long, global = true)]
+    pub api_key: Option<String>,
+
+    /// Base URL override for API providers (ignored by CLI providers)
+    #[arg(long, global = true)]
+    pub base_url: Option<String>,
+
     /// Run as if started in <path>
     #[arg(short = 'C', long = "cwd", global = true, value_name = "PATH")]
     pub directory: Option<std::path::PathBuf>,

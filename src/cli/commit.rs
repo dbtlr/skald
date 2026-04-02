@@ -21,6 +21,8 @@ pub struct CommitOptions {
     pub is_tty: bool,
     pub provider_name: String,
     pub model: Option<String>,
+    pub api_key: Option<String>,
+    pub base_url: Option<String>,
 }
 
 pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {

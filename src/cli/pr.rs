@@ -19,6 +19,8 @@ pub struct PrOptions {
     pub is_tty: bool,
     pub provider_name: String,
     pub model: Option<String>,
+    pub api_key: Option<String>,
+    pub base_url: Option<String>,
 }
 
 /// Determine the source ref for diff/log commands based on push flag and upstream state.
