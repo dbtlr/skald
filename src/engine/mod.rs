@@ -1,4 +1,6 @@
 #[allow(dead_code)]
+pub mod compaction;
+#[allow(dead_code)]
 pub mod config;
 pub mod doctor;
 #[allow(dead_code)]
