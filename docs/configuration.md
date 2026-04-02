@@ -33,7 +33,7 @@ Shows all resolved values with their sources (`default`, `global`, or `project`)
 ## Config Schema
 
 ```yaml
-# AI provider (claude, codex, gemini, opencode, copilot)
+# AI provider (anthropic, claude, codex, gemini, opencode, copilot)
 provider: claude
 
 # Language for generated messages
@@ -50,6 +50,9 @@ vcs: git
 
 # Provider-specific settings
 providers:
+  anthropic:
+    api_key: $ANTHROPIC_API_KEY
+    base_url: https://api.anthropic.com
   claude:
     model: claude-sonnet-4-20250514
   codex:
@@ -82,7 +85,7 @@ String values can reference environment variables with `$VAR` syntax:
 
 ```yaml
 providers:
-  anthropic-api:
+  anthropic:
     api_key: $ANTHROPIC_API_KEY
 ```
 

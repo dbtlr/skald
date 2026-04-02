@@ -25,6 +25,8 @@ These flags are available on all commands:
 | `--format` | | Output format: `plain`, `table`, `json` |
 | `--provider` | | AI provider to use for this command (e.g. `claude`, `codex`, `gemini`) |
 | `--model` | | Model name to pass to the provider (e.g. `claude-haiku-4-5`, `gpt-4o`) |
+| `--api-key` | | API key for direct API providers (e.g., `--api-key sk-ant-...`) |
+| `--base-url` | | Base URL override for API providers |
 | `--version` | `-V` | Print version |
 | `--help` | `-h` | Print help |
 
