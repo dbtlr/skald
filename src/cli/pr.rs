@@ -2,7 +2,7 @@ use crate::engine::config::schema::ResolvedConfig;
 use crate::engine::output::OutputFormat;
 use crate::engine::prompts::{PromptContext, render_prompt, resolve_template};
 use crate::platform::{CreatePrRequest, PlatformAdapter, detect_platform};
-use crate::providers::{CliProvider, PrContent, PrContext, Provider, get_provider_config};
+use crate::providers::{PrContent, PrContext};
 use crate::vcs::git::GitAdapter;
 use crate::vcs::{DiffOptions, DiffResult, VcsAdapter};
 
@@ -47,6 +47,8 @@ fn generate_pr_contents(
     is_tty: bool,
     provider_name: &str,
     model: Option<String>,
+    api_key: Option<String>,
+    base_url: Option<String>,
 ) -> Result<Vec<PrContent>, i32> {
     let prompt_ctx = PromptContext::new()
         .set("branch", branch)
@@ -87,19 +89,19 @@ fn generate_pr_contents(
         extra_context: context.map(|s| s.to_string()),
     };
 
-    let provider_config = match get_provider_config(provider_name) {
-        Some(c) => c,
-        None => {
-            cliclack::log::error(format!(
-                "Unknown provider '{}'. Available: {}",
-                provider_name,
-                crate::providers::available_provider_names().join(", ")
-            ))
-            .ok();
+    let provider = match crate::providers::create_provider(
+        provider_name,
+        model,
+        api_key,
+        base_url,
+        config,
+    ) {
+        Ok(p) => p,
+        Err(e) => {
+            cliclack::log::error(format!("{e}")).ok();
             return Err(1);
         }
     };
-    let provider = CliProvider::new(provider_config, model);
 
     let sp = if is_tty {
         let s = cliclack::spinner();
@@ -238,6 +240,8 @@ pub fn run_pr(opts: PrOptions, config: &ResolvedConfig) -> i32 {
         opts.is_tty,
         &opts.provider_name,
         opts.model.clone(),
+        opts.api_key.clone(),
+        opts.base_url.clone(),
     ) {
         Ok(c) => c,
         Err(code) => return code,
@@ -349,6 +353,8 @@ fn run_interactive_pr(
                     opts.is_tty,
                     &opts.provider_name,
                     opts.model.clone(),
+                    opts.api_key.clone(),
+                    opts.base_url.clone(),
                 ) {
                     contents = new_contents;
                 }
@@ -512,6 +518,8 @@ fn run_confirmation_menu(
                     opts.is_tty,
                     &opts.provider_name,
                     opts.model.clone(),
+                    opts.api_key.clone(),
+                    opts.base_url.clone(),
                 ) {
                     *contents = new_contents;
                 }
@@ -598,6 +606,8 @@ fn handle_context_regeneration(
     is_tty: bool,
     provider_name: &str,
     model: Option<String>,
+    api_key: Option<String>,
+    base_url: Option<String>,
 ) -> Option<Vec<PrContent>> {
     let input: Result<String, _> = cliclack::input("Add context for regeneration:")
         .placeholder("e.g. this PR fixes the auth redirect bug")
@@ -632,6 +642,8 @@ fn handle_context_regeneration(
         is_tty,
         provider_name,
         model,
+        api_key,
+        base_url,
     ) {
         Ok(new_contents) => {
             cliclack::log::success("Content regenerated with new context.").ok();

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::engine::config::schema::ResolvedConfig;
 use crate::engine::output::OutputFormat;
 use crate::engine::prompts::{PromptContext, render_prompt, resolve_template};
-use crate::providers::{CliProvider, CommitContext, Provider, get_provider_config};
+use crate::providers::{CommitContext, Provider};
 use crate::vcs::git::GitAdapter;
 use crate::vcs::{DiffOptions, StageMode, VcsAdapter};
 
@@ -149,19 +149,19 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     };
 
     // 12. Create provider
-    let provider_config = match get_provider_config(&opts.provider_name) {
-        Some(c) => c,
-        None => {
-            cliclack::log::error(format!(
-                "Unknown provider '{}'. Available: {}",
-                opts.provider_name,
-                crate::providers::available_provider_names().join(", ")
-            ))
-            .ok();
+    let provider = match crate::providers::create_provider(
+        &opts.provider_name,
+        opts.model.clone(),
+        opts.api_key.clone(),
+        opts.base_url.clone(),
+        config,
+    ) {
+        Ok(p) => p,
+        Err(e) => {
+            cliclack::log::error(format!("{e}")).ok();
             return 1;
         }
     };
-    let provider = CliProvider::new(provider_config, opts.model.clone());
 
     // 13. Show spinner, call provider
     let count = if opts.yes { 1 } else { opts.count };
@@ -221,7 +221,7 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
                 context.as_deref(),
                 &config.language,
                 &diff_result.diff,
-                &provider,
+                provider.as_ref(),
                 &rt,
                 opts.is_tty,
             ) {
@@ -243,7 +243,7 @@ pub fn run_commit(opts: CommitOptions, config: &ResolvedConfig) -> i32 {
     let mut state = InteractiveState {
         messages,
         git: &git,
-        provider: &provider,
+        provider: provider.as_ref(),
         rt: &rt,
         diff: &diff_result.diff,
         diff_stat: &diff_result.stat,
@@ -353,7 +353,7 @@ fn extract_files_from_stat(stat: &str) -> String {
 struct InteractiveState<'a> {
     messages: Vec<String>,
     git: &'a GitAdapter,
-    provider: &'a CliProvider,
+    provider: &'a dyn Provider,
     rt: &'a tokio::runtime::Runtime,
     diff: &'a str,
     diff_stat: &'a str,
@@ -638,7 +638,7 @@ fn generate_body(
     context: Option<&str>,
     language: &str,
     diff: &str,
-    provider: &CliProvider,
+    provider: &dyn Provider,
     rt: &tokio::runtime::Runtime,
     is_tty: bool,
 ) -> Option<String> {
