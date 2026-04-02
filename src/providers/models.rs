@@ -130,6 +130,18 @@ pub fn get_opencode_models() -> Option<Vec<String>> {
     }
 }
 
+/// Resolve a short model alias to its full model identifier.
+/// Known aliases (sonnet, opus, haiku) map to dateless Anthropic model names.
+/// Unknown names pass through unchanged.
+pub fn resolve_model_alias(name: &str) -> &str {
+    match name {
+        "sonnet" => "claude-sonnet-4",
+        "opus" => "claude-opus-4",
+        "haiku" => "claude-haiku-4-5",
+        _ => name,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -193,5 +205,33 @@ mod tests {
         let provider = list.providers.get("test").expect("test provider missing");
         assert_eq!(provider.recommended, "model-a");
         assert_eq!(provider.models, vec!["model-a", "model-b"]);
+    }
+
+    #[test]
+    fn resolve_alias_sonnet() {
+        assert_eq!(resolve_model_alias("sonnet"), "claude-sonnet-4");
+    }
+
+    #[test]
+    fn resolve_alias_opus() {
+        assert_eq!(resolve_model_alias("opus"), "claude-opus-4");
+    }
+
+    #[test]
+    fn resolve_alias_haiku() {
+        assert_eq!(resolve_model_alias("haiku"), "claude-haiku-4-5");
+    }
+
+    #[test]
+    fn resolve_alias_passthrough() {
+        assert_eq!(
+            resolve_model_alias("claude-sonnet-4-20250514"),
+            "claude-sonnet-4-20250514"
+        );
+    }
+
+    #[test]
+    fn resolve_alias_unknown_passthrough() {
+        assert_eq!(resolve_model_alias("gpt-5"), "gpt-5");
     }
 }
