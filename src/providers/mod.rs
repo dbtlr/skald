@@ -1,10 +1,12 @@
 use async_trait::async_trait;
 
+pub mod anthropic;
 pub mod cli_provider;
 pub mod config;
 pub mod models;
 pub mod resolve;
 
+pub use anthropic::AnthropicProvider;
 pub use cli_provider::CliProvider;
 pub use config::{available_provider_names, get_provider_config};
 
