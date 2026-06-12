@@ -11,26 +11,25 @@ pub fn resolve_api_key(
     default_env_var: &str,
 ) -> Result<String, String> {
     // 1. Explicit value (from --api-key flag)
-    if let Some(key) = explicit {
-        if !key.is_empty() {
-            return Ok(key.to_string());
-        }
+    if let Some(key) = explicit
+        && !key.is_empty()
+    {
+        return Ok(key.to_string());
     }
 
     // 2. Config: providers.<name>.api_key (already env-expanded by config loader)
-    if let Some(provider_cfg) = config.providers.get(provider_name) {
-        if let Some(ref key) = provider_cfg.api_key {
-            if !key.is_empty() {
-                return Ok(key.clone());
-            }
-        }
+    if let Some(provider_cfg) = config.providers.get(provider_name)
+        && let Some(ref key) = provider_cfg.api_key
+        && !key.is_empty()
+    {
+        return Ok(key.clone());
     }
 
     // 3. Default env var for this provider
-    if let Ok(key) = std::env::var(default_env_var) {
-        if !key.is_empty() {
-            return Ok(key);
-        }
+    if let Ok(key) = std::env::var(default_env_var)
+        && !key.is_empty()
+    {
+        return Ok(key);
     }
 
     Err(format!(
@@ -52,26 +51,25 @@ pub fn resolve_base_url(
     default_env_var: &str,
 ) -> Option<String> {
     // 1. Explicit value (from --base-url flag)
-    if let Some(url) = explicit {
-        if !url.is_empty() {
-            return Some(url.to_string());
-        }
+    if let Some(url) = explicit
+        && !url.is_empty()
+    {
+        return Some(url.to_string());
     }
 
     // 2. Config: providers.<name>.base_url (already env-expanded)
-    if let Some(provider_cfg) = config.providers.get(provider_name) {
-        if let Some(ref url) = provider_cfg.base_url {
-            if !url.is_empty() {
-                return Some(url.clone());
-            }
-        }
+    if let Some(provider_cfg) = config.providers.get(provider_name)
+        && let Some(ref url) = provider_cfg.base_url
+        && !url.is_empty()
+    {
+        return Some(url.clone());
     }
 
     // 3. Default env var
-    if let Ok(url) = std::env::var(default_env_var) {
-        if !url.is_empty() {
-            return Some(url);
-        }
+    if let Ok(url) = std::env::var(default_env_var)
+        && !url.is_empty()
+    {
+        return Some(url);
     }
 
     None

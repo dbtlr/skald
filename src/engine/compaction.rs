@@ -1,8 +1,8 @@
-/// Diff compaction pipeline for API providers.
-///
-/// Two-stage process:
-/// 1. Smart filtering — remove noise (lock files, build output, generated code, binaries)
-/// 2. File summarization — collapse largest file diffs when over token budget
+//! Diff compaction pipeline for API providers.
+//!
+//! Two-stage process:
+//! 1. Smart filtering — remove noise (lock files, build output, generated code, binaries)
+//! 2. File summarization — collapse largest file diffs when over token budget
 
 /// Result of compacting a diff.
 #[derive(Debug, Clone)]
@@ -61,10 +61,10 @@ fn should_filter(path: &str) -> bool {
     }
 
     // Check .generated. in filename
-    if let Some(filename) = path.rsplit('/').next() {
-        if filename.contains(".generated.") {
-            return true;
-        }
+    if let Some(filename) = path.rsplit('/').next()
+        && filename.contains(".generated.")
+    {
+        return true;
     }
 
     // Check filtered extensions
@@ -166,7 +166,7 @@ pub fn compact_diff_with_budget(diff: &str, stat: &str, token_budget: usize) -> 
 
     // Stage 2: Summarize largest files until under budget
     // Sort by size descending
-    kept.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
+    kept.sort_by_key(|(_, diff)| std::cmp::Reverse(diff.len()));
 
     let mut result_sections: Vec<(String, String)> = kept.clone();
     let mut current_tokens = filtered_tokens;
