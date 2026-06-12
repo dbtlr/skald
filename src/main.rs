@@ -118,6 +118,8 @@ fn main() {
                     is_tty,
                     provider_name: provider_name.clone(),
                     model: model.clone(),
+                    api_key: cli.api_key.clone(),
+                    base_url: cli.base_url.clone(),
                 },
                 config,
             )
@@ -145,6 +147,8 @@ fn main() {
                     is_tty,
                     provider_name: provider_name.clone(),
                     model: model.clone(),
+                    api_key: cli.api_key.clone(),
+                    base_url: cli.base_url.clone(),
                 },
                 config,
             )
@@ -172,6 +176,8 @@ fn main() {
                     is_tty,
                     provider_name: provider_name.clone(),
                     model: model.clone(),
+                    api_key: cli.api_key.clone(),
+                    base_url: cli.base_url.clone(),
                 },
                 config,
             )

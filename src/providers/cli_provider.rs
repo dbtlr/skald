@@ -154,7 +154,7 @@ impl CliProvider {
 
 /// Parse AI response into PR title + body pairs.
 /// First line is title, rest is body. Multiple candidates separated by "---".
-fn parse_pr_response(response: &str, count: usize) -> Vec<PrContent> {
+pub fn parse_pr_response(response: &str, count: usize) -> Vec<PrContent> {
     let response = response.trim();
     if response.is_empty() {
         return vec![];

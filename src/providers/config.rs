@@ -51,12 +51,22 @@ static COPILOT: CliProviderConfig = CliProviderConfig {
 
 static ALL_PROVIDERS: &[&CliProviderConfig] = &[&CLAUDE, &CODEX, &GEMINI, &OPENCODE, &COPILOT];
 
+/// API providers (direct HTTP, not CLI wrappers).
+const API_PROVIDERS: &[&str] = &["anthropic"];
+
+/// Check if a provider name is a known API provider (not a CLI wrapper).
+pub fn is_api_provider(name: &str) -> bool {
+    API_PROVIDERS.contains(&name)
+}
+
 pub fn get_provider_config(name: &str) -> Option<&'static CliProviderConfig> {
     ALL_PROVIDERS.iter().copied().find(|p| p.name == name)
 }
 
 pub fn available_provider_names() -> Vec<&'static str> {
-    ALL_PROVIDERS.iter().map(|p| p.name).collect()
+    let mut names: Vec<&str> = ALL_PROVIDERS.iter().map(|p| p.name).collect();
+    names.extend_from_slice(API_PROVIDERS);
+    names
 }
 
 pub fn is_provider_available(name: &str) -> bool {
@@ -88,14 +98,23 @@ mod tests {
     }
 
     #[test]
-    fn available_provider_names_lists_five() {
+    fn available_provider_names_lists_all() {
         let names = available_provider_names();
-        assert_eq!(names.len(), 5);
+        assert_eq!(names.len(), 6);
         assert!(names.contains(&"claude"));
         assert!(names.contains(&"codex"));
         assert!(names.contains(&"gemini"));
         assert!(names.contains(&"opencode"));
         assert!(names.contains(&"copilot"));
+        assert!(names.contains(&"anthropic"));
+    }
+
+    #[test]
+    fn is_api_provider_identifies_anthropic() {
+        assert!(is_api_provider("anthropic"));
+        assert!(!is_api_provider("claude"));
+        assert!(!is_api_provider("codex"));
+        assert!(!is_api_provider("unknown"));
     }
 
     #[test]
