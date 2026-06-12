@@ -89,19 +89,14 @@ fn generate_pr_contents(
         extra_context: context.map(|s| s.to_string()),
     };
 
-    let provider = match crate::providers::create_provider(
-        provider_name,
-        model,
-        api_key,
-        base_url,
-        config,
-    ) {
-        Ok(p) => p,
-        Err(e) => {
-            cliclack::log::error(format!("{e}")).ok();
-            return Err(1);
-        }
-    };
+    let provider =
+        match crate::providers::create_provider(provider_name, model, api_key, base_url, config) {
+            Ok(p) => p,
+            Err(e) => {
+                cliclack::log::error(format!("{e}")).ok();
+                return Err(1);
+            }
+        };
 
     let sp = if is_tty {
         let s = cliclack::spinner();

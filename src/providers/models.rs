@@ -224,10 +224,7 @@ mod tests {
 
     #[test]
     fn resolve_alias_passthrough() {
-        assert_eq!(
-            resolve_model_alias("claude-sonnet-4-20250514"),
-            "claude-sonnet-4-20250514"
-        );
+        assert_eq!(resolve_model_alias("claude-sonnet-4-20250514"), "claude-sonnet-4-20250514");
     }
 
     #[test]

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use genai::Client;
 use genai::chat::{ChatMessage, ChatOptions, ChatRequest, JsonSpec};
 use genai::resolver::{AuthData, AuthResolver, Endpoint, ServiceTargetResolver};
-use genai::Client;
 use serde::Deserialize;
 
 use crate::engine::compaction::compact_diff;
@@ -15,11 +15,9 @@ pub struct AnthropicProvider {
 
 impl AnthropicProvider {
     pub fn new(api_key: String, base_url: Option<String>, model: String) -> Self {
-        let mut builder = Client::builder().with_auth_resolver(
-            AuthResolver::from_resolver_fn(move |_model_iden| {
-                Ok(Some(AuthData::from_single(api_key.clone())))
-            }),
-        );
+        let mut builder = Client::builder().with_auth_resolver(AuthResolver::from_resolver_fn(
+            move |_model_iden| Ok(Some(AuthData::from_single(api_key.clone()))),
+        ));
 
         if let Some(url) = base_url {
             builder = builder.with_service_target_resolver(
@@ -71,8 +69,9 @@ fn map_genai_error(e: genai::Error) -> ProviderError {
     if detail.contains("429") || detail.contains("rate") {
         return ProviderError::Generation {
             provider: "anthropic".to_string(),
-            detail: "Rate limited by Anthropic. Wait a moment and retry, or check your plan limits."
-                .to_string(),
+            detail:
+                "Rate limited by Anthropic. Wait a moment and retry, or check your plan limits."
+                    .to_string(),
         };
     }
 

@@ -89,12 +89,7 @@ pub fn resolve_model(
 ) -> String {
     let raw = explicit
         .map(|s| s.to_string())
-        .or_else(|| {
-            config
-                .providers
-                .get(provider_name)
-                .and_then(|p| p.model.clone())
-        })
+        .or_else(|| config.providers.get(provider_name).and_then(|p| p.model.clone()))
         .unwrap_or_else(|| default_model.to_string());
 
     resolve_model_alias(&raw).to_string()
@@ -119,7 +114,11 @@ mod tests {
         }
     }
 
-    fn config_with_provider(api_key: Option<&str>, base_url: Option<&str>, model: Option<&str>) -> ResolvedConfig {
+    fn config_with_provider(
+        api_key: Option<&str>,
+        base_url: Option<&str>,
+        model: Option<&str>,
+    ) -> ResolvedConfig {
         let mut config = empty_config();
         config.providers.insert(
             "anthropic".to_string(),
@@ -137,7 +136,8 @@ mod tests {
     #[test]
     fn api_key_from_explicit() {
         let config = empty_config();
-        let result = resolve_api_key(Some("sk-explicit"), &config, "anthropic", "ANTHROPIC_API_KEY");
+        let result =
+            resolve_api_key(Some("sk-explicit"), &config, "anthropic", "ANTHROPIC_API_KEY");
         assert_eq!(result.unwrap(), "sk-explicit");
     }
 
@@ -151,14 +151,16 @@ mod tests {
     #[test]
     fn api_key_explicit_overrides_config() {
         let config = config_with_provider(Some("sk-config"), None, None);
-        let result = resolve_api_key(Some("sk-explicit"), &config, "anthropic", "ANTHROPIC_API_KEY");
+        let result =
+            resolve_api_key(Some("sk-explicit"), &config, "anthropic", "ANTHROPIC_API_KEY");
         assert_eq!(result.unwrap(), "sk-explicit");
     }
 
     #[test]
     fn api_key_missing_returns_error() {
         let config = empty_config();
-        let result = resolve_api_key(None, &config, "anthropic", "SKALD_TEST_NONEXISTENT_KEY_12345");
+        let result =
+            resolve_api_key(None, &config, "anthropic", "SKALD_TEST_NONEXISTENT_KEY_12345");
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.contains("No API key found"));
@@ -171,7 +173,12 @@ mod tests {
     #[test]
     fn base_url_from_explicit() {
         let config = empty_config();
-        let result = resolve_base_url(Some("https://custom.api"), &config, "anthropic", "ANTHROPIC_BASE_URL");
+        let result = resolve_base_url(
+            Some("https://custom.api"),
+            &config,
+            "anthropic",
+            "ANTHROPIC_BASE_URL",
+        );
         assert_eq!(result.unwrap(), "https://custom.api");
     }
 
@@ -185,7 +192,8 @@ mod tests {
     #[test]
     fn base_url_none_when_missing() {
         let config = empty_config();
-        let result = resolve_base_url(None, &config, "anthropic", "SKALD_TEST_NONEXISTENT_URL_12345");
+        let result =
+            resolve_base_url(None, &config, "anthropic", "SKALD_TEST_NONEXISTENT_URL_12345");
         assert!(result.is_none());
     }
 
@@ -215,7 +223,12 @@ mod tests {
     #[test]
     fn model_passthrough_full_id() {
         let config = empty_config();
-        let result = resolve_model(Some("claude-sonnet-4-20250514"), &config, "anthropic", "claude-sonnet-4");
+        let result = resolve_model(
+            Some("claude-sonnet-4-20250514"),
+            &config,
+            "anthropic",
+            "claude-sonnet-4",
+        );
         assert_eq!(result, "claude-sonnet-4-20250514");
     }
 }

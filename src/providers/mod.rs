@@ -6,9 +6,9 @@ pub mod config;
 pub mod models;
 pub mod resolve;
 
+use crate::engine::config::schema::ResolvedConfig;
 pub use anthropic::AnthropicProvider;
 pub use cli_provider::CliProvider;
-use crate::engine::config::schema::ResolvedConfig;
 
 /// Create a provider instance based on provider name.
 ///

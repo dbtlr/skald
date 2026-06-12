@@ -18,17 +18,28 @@ const DEFAULT_TOKEN_BUDGET: usize = 80_000;
 
 /// Patterns for file paths that should be filtered from diffs.
 const FILTERED_DIRECTORIES: &[&str] = &[
-    "dist/", "build/", "out/", ".next/", "target/", "__pycache__/", "node_modules/",
-    "generated/", "auto-generated/", "codegen/",
+    "dist/",
+    "build/",
+    "out/",
+    ".next/",
+    "target/",
+    "__pycache__/",
+    "node_modules/",
+    "generated/",
+    "auto-generated/",
+    "codegen/",
 ];
 
-const FILTERED_EXTENSIONS: &[&str] = &[
-    ".min.js", ".min.css", ".map",
-];
+const FILTERED_EXTENSIONS: &[&str] = &[".min.js", ".min.css", ".map"];
 
 const FILTERED_FILENAMES: &[&str] = &[
-    "Cargo.lock", "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
-    "composer.lock", "Gemfile.lock", "poetry.lock",
+    "Cargo.lock",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "composer.lock",
+    "Gemfile.lock",
+    "poetry.lock",
 ];
 
 /// Check if a file path matches any filter pattern.
@@ -320,7 +331,9 @@ diff --git a/src/main.rs b/src/main.rs
     #[test]
     fn compact_summarizes_large_files_over_budget() {
         // Create a diff that's over a small budget
-        let mut large_diff = String::from("diff --git a/src/big.rs b/src/big.rs\n--- a/src/big.rs\n+++ b/src/big.rs\n@@ -1,100 +1,100 @@\n");
+        let mut large_diff = String::from(
+            "diff --git a/src/big.rs b/src/big.rs\n--- a/src/big.rs\n+++ b/src/big.rs\n@@ -1,100 +1,100 @@\n",
+        );
         for i in 0..200 {
             large_diff.push_str(&format!("+line {i}\n"));
         }
