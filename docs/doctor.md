@@ -64,23 +64,21 @@ When `--fix` is passed, doctor attempts to auto-fix all fixable issues in a sing
 
 Fixed checks show the `⚡` symbol and include what was changed.
 
-## `--full` Deep Checks
+## `--offline` Skip Network Checks
+
+By default, doctor runs all checks including live provider connectivity — sending a minimal prompt to the configured AI provider to verify it responds. This confirms the provider binary is not only installed but functional and authenticated.
+
+To skip network checks (e.g., when offline or for faster feedback):
 
 ```sh
-sk doctor --full
+sk doctor --offline
 ```
 
-When `--full` is passed, doctor runs additional live connectivity checks that go beyond static validation:
-
-- **Provider connectivity** — sends a minimal prompt to the configured AI provider and verifies a response is returned. This confirms the provider binary is not only installed but functional and authenticated.
-
-Full checks are skipped by default because they require network access and may take a few seconds. Use `--full` when diagnosing provider issues or verifying a fresh install.
-
-`--full` can be combined with other flags:
+`--offline` can be combined with other flags:
 
 ```sh
-sk doctor --full --fix           # Deep checks + auto-fix
-sk doctor --full --format json   # Machine-readable deep check results
+sk doctor --offline --fix           # Local checks + auto-fix
+sk doctor --offline --format json   # Machine-readable local check results
 ```
 
 ## `--format json` Output

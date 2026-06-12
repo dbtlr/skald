@@ -14,16 +14,14 @@ sk pr [options]
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--auto` | | Generate title + description and create the PR immediately |
-| `--title-only` | | Print title suggestions to stdout without creating the PR |
+| `--yes` | `-y` | Generate title + description and create/update immediately (implies `-n 1`) |
 | `--dry-run` | | Print the full PR payload (title + body) without creating the PR |
-| `--draft` | | Create the PR as a draft |
+| `--draft` | `-d` | Create the PR as a draft |
 | `--push` | | Push the current branch to remote before creating the PR |
-| `--update` | | Update an existing PR (coming in M9) |
 | `--base` | `-b` | Target branch to merge into (overrides config `pr_target`) |
 | `--num` | `-n` | Number of title suggestions to generate (default: 3) |
 | `--context` | `-c` | Provide extra context to guide the AI |
-| `--show-prompt` | | Render the PR prompt template and print to stdout without calling AI |
+| `--context-file` | | Read context from a file |
 | `--format` | | Output format: `plain`, `table`, `json` |
 
 ## Examples
@@ -33,7 +31,7 @@ sk pr [options]
 Generate a title and description, then create the PR immediately:
 
 ```sh
-sk pr --auto
+sk pr -y
 ```
 
 ### Draft PR with push
@@ -41,7 +39,7 @@ sk pr --auto
 Push the branch and open a draft PR in one step:
 
 ```sh
-sk pr --auto --draft --push
+sk pr -y -d --push
 ```
 
 ### Preview with dry-run
@@ -60,21 +58,12 @@ Emit the PR payload as JSON (useful for scripting):
 sk pr --dry-run --format json
 ```
 
-### Title suggestions only
-
-Get multiple title candidates to choose from:
-
-```sh
-sk pr --title-only
-sk pr --title-only -n 5
-```
-
 ### Add context
 
 Give the AI a hint about the intent of the PR:
 
 ```sh
-sk pr --auto --context "refactored auth to use JWT tokens"
+sk pr -y -c "refactored auth to use JWT tokens"
 ```
 
 ### Custom base branch
@@ -82,47 +71,45 @@ sk pr --auto --context "refactored auth to use JWT tokens"
 Target a branch other than the configured default:
 
 ```sh
-sk pr --auto --base develop
-```
-
-### Inspect the prompt
-
-See what would be sent to the AI without calling it:
-
-```sh
-sk pr --show-prompt
+sk pr -y -b develop
 ```
 
 ## Existing PR Detection
 
-When `--auto` is used, skald checks whether a PR already exists for the current branch before creating one. If a PR is found, it prints a warning with the PR number and URL and exits without creating a duplicate.
+Skald automatically detects whether a PR already exists for the current branch:
+
+- **If a PR exists**: updates its title and description with freshly generated content
+- **If no PR exists**: creates a new one
+
+This works in both `-y` mode and interactive mode. There is no separate `--update` flag — the tool does the right thing based on state.
 
 ## Unpushed Commits Note
 
 After creating a PR, if the current branch has commits that have not been pushed to the remote, skald prints a reminder:
 
 ```
-You have unpushed commits. Use `sk pr --push --update` to push and update the PR.
+You have unpushed commits. Use `sk pr --push` to push and create/update the PR.
 ```
 
-Use `--push` with `--auto` to push before creating the PR in a single command.
+Use `--push` to push before creating the PR in a single command.
 
 ## Base Branch Resolution
 
 The target branch is resolved in this order:
 
 1. `--base` / `-b` flag
-2. `pr_target` in project config (`.skaldrc.yaml`)
-3. `pr_target` in global config (`~/.config/skald/config.yaml`)
-4. Built-in default: `main`
+2. Existing PR's base branch (when updating)
+3. `pr_target` in project config (`.skaldrc.yaml`)
+4. `pr_target` in global config (`~/.config/skald/config.yaml`)
+5. Built-in default: `main`
 
 ## Platform Support
 
-`sk pr --auto` requires a supported platform to create PRs. See [platforms.md](platforms.md) for setup instructions and supported platforms.
+`sk pr -y` requires a supported platform to create PRs. See [platforms.md](platforms.md) for setup instructions and supported platforms.
 
 ## Interactive Mode
 
-Running `sk pr` without `--auto`, `--title-only`, or `--dry-run` enters interactive mode.
+Running `sk pr` without `-y` or `--dry-run` enters interactive mode.
 
 ### Stage 1: Title Selection
 
@@ -142,7 +129,7 @@ After selecting a title, the full PR (title + body) is displayed for review:
 
 | Option | Description |
 |--------|-------------|
-| Create | Create the PR |
+| Create / Update | Create or update the PR (based on existing PR detection) |
 | Draft | Create as draft |
 | Edit title | Edit the title inline |
 | Edit body | Open body in `$EDITOR` |
@@ -159,26 +146,6 @@ export EDITOR="nvim"         # Neovim
 ```
 
 Falls back to `vi` if neither is set.
-
-## Updating a PR
-
-Regenerate the title and description for an existing PR:
-
-```sh
-# Interactive update
-sk pr --update
-
-# Auto-update (no interaction)
-sk pr --update --auto
-
-# Push changes then update
-sk pr --push --update
-
-# Preview without updating
-sk pr --update --dry-run
-```
-
-The `--update` flag detects the existing PR for your current branch and regenerates its title and description from the latest diff and commit history.
 
 ### Diff Scope
 

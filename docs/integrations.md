@@ -1,4 +1,6 @@
-# Integrations
+# Integrations (Experimental)
+
+> **Note:** The `integrations` command is behind a feature flag. Install with `cargo install skald-cli --features integrations` to enable it.
 
 The `sk integrations` command outputs config snippets for connecting Skald to other tools. Each snippet is printed to stdout so you can pipe or redirect it directly into your config.
 
@@ -20,7 +22,7 @@ sk integrations hook --install --force  # Overwrite an existing hook
 |-------------|--------------|
 | `worktrunk` | Registers `sk` as the commit message generator in Worktrunk |
 | `lazygit` | Adds a custom `C` keybinding that runs `sk commit` |
-| `fugitive` | Adds a `<leader>sc` mapping that runs `sk commit --auto` |
+| `fugitive` | Adds a `<leader>sc` mapping that runs `sk commit -y` |
 | `hook` | Installs a `prepare-commit-msg` hook that pre-fills commit messages |
 
 ---
@@ -48,7 +50,7 @@ Output:
 ```toml
 [tools.skald]
 command = "sk"
-args = ["commit", "--message-only", "--auto"]
+args = ["commit", "--dry-run", "-y"]
 ```
 
 ---
@@ -88,7 +90,7 @@ The `subprocess: true` flag hands the terminal over to `sk commit` so the intera
 
 ## Fugitive
 
-[Vim-fugitive](https://github.com/tpope/vim-fugitive) is the standard Vim/Neovim git plugin. This snippet maps `<leader>sc` to run `sk commit --auto` without leaving your editor.
+[Vim-fugitive](https://github.com/tpope/vim-fugitive) is the standard Vim/Neovim git plugin. This snippet maps `<leader>sc` to run `sk commit -y` without leaving your editor.
 
 ### Setup
 
@@ -108,7 +110,7 @@ Output:
 
 ```vim
 " Skald: AI-generated commit message
-nnoremap <leader>sc :!sk commit --auto<CR>
+nnoremap <leader>sc :!sk commit -y<CR>
 ```
 
 ---
@@ -131,7 +133,7 @@ Output:
 COMMIT_MSG_FILE=$1
 COMMIT_SOURCE=$2
 if [ -z "$COMMIT_SOURCE" ]; then
-    MSG=$(sk commit --message-only --auto 2>/dev/null)
+    MSG=$(sk commit --dry-run -y 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$MSG" ]; then
         echo "$MSG" > "$COMMIT_MSG_FILE"
     fi

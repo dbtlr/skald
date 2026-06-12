@@ -4,26 +4,34 @@
 
 ## Non-Interactive Modes
 
-### Auto mode
+### Yes mode
 
 Generate a single commit message and commit immediately:
 
 ```sh
-sk commit --auto
+sk commit -y
 ```
 
-### Message-only mode
+### Dry run
 
-Print generated messages to stdout without committing:
+Preview generated messages without committing:
 
 ```sh
-sk commit --message-only
+sk commit --dry-run
 ```
 
 Control the number of suggestions with `-n`:
 
 ```sh
-sk commit --message-only -n 5
+sk commit --dry-run -n 5
+```
+
+Control the output format:
+
+```sh
+sk commit --dry-run --format plain   # one message per line (default)
+sk commit --dry-run --format table   # tabular output
+sk commit --dry-run --format json    # JSON array
 ```
 
 ## Staging
@@ -31,21 +39,23 @@ sk commit --message-only -n 5
 Stage tracked modified files before committing:
 
 ```sh
-sk commit --auto -a
+sk commit -y -a
 ```
 
 Stage all files including untracked:
 
 ```sh
-sk commit --auto -A
+sk commit -y --include-untracked
 ```
+
+Staging is deferred until you confirm the commit. If you cancel, your index is untouched.
 
 ## Amend
 
 Amend the previous commit with a newly generated message:
 
 ```sh
-sk commit --auto --amend
+sk commit -y --amend
 ```
 
 ## Context
@@ -53,13 +63,13 @@ sk commit --auto --amend
 Provide extra context to guide the AI:
 
 ```sh
-sk commit --auto --context "Refactored auth to use JWT"
+sk commit -y -c "Refactored auth to use JWT"
 ```
 
 Or read context from a file:
 
 ```sh
-sk commit --auto --context-file notes.txt
+sk commit -y --context-file notes.txt
 ```
 
 ## Dry Run
@@ -67,30 +77,22 @@ sk commit --auto --context-file notes.txt
 See what would be committed without actually committing:
 
 ```sh
-sk commit --auto --dry-run
+sk commit -y --dry-run
 ```
 
-## Show Prompt
+## Commit Body
 
-Render the prompt template that would be sent to the AI, without calling it:
+Generate a multi-line commit message with a title and a detailed body:
 
 ```sh
-sk commit --show-prompt
+sk commit -y --body
 ```
 
-## Output Formats
-
-When using `--message-only`, control the output format:
-
-```sh
-sk commit --message-only --format plain   # one message per line (default)
-sk commit --message-only --format table   # tabular output
-sk commit --message-only --format json    # JSON array
-```
+This generates a title via the `commit-title` template and a body via the `commit-body` template, then commits with `git commit -m "title" -m "body"`.
 
 ## Interactive Mode (Default)
 
-When you run `sk commit` without `--auto` or `--message-only`, skald enters an interactive carousel:
+When you run `sk commit` without `-y` or `--dry-run`, skald enters an interactive carousel:
 
 1. Analyzes staged changes
 2. Generates commit message suggestions via AI
@@ -106,19 +108,7 @@ When you run `sk commit` without `--auto` or `--message-only`, skald enters an i
 | `?` | Show action menu (accept, amend, abort) |
 | Esc / Ctrl+C | Abort |
 
-### Extended Descriptions
-
-Skald can generate a multi-line commit message with a title and a detailed body.
-
-**Non-interactive:**
-
-```sh
-sk commit --auto --extended
-```
-
-This generates a title via the `commit-title` template and a body via the `commit-body` template, then commits with `git commit -m "title" -m "body"`.
-
-**Interactive:**
+### Commit Body (Interactive)
 
 - Press `x` in the carousel to trigger the extend flow for the current suggestion.
 - Or open the `?` action menu and select **Extend** to generate a body for the selected title.
@@ -132,11 +122,11 @@ Provide extra context to improve message quality, especially for changes where t
 **Non-interactive:**
 
 ```sh
-sk commit --auto --context "Refactored auth to use JWT"
-sk commit --auto --context-file notes.txt
+sk commit -y -c "Refactored auth to use JWT"
+sk commit -y --context-file notes.txt
 ```
 
-- `--context "..."` passes inline context to the AI prompt.
+- `-c "..."` / `--context "..."` passes inline context to the AI prompt.
 - `--context-file path` reads context from a file.
 
 **Interactive:**
@@ -148,8 +138,22 @@ Context is appended to the prompt template and helps the AI understand the *why*
 ### No Staged Changes
 
 If no changes are staged, skald detects unstaged files and offers to stage them:
-- **Stage all (-A)** — includes new and modified files
-- **Stage tracked (-a)** — modified files only
+- **Stage all (--include-untracked)** — includes new and modified files
+- **Stage tracked (-a/--all)** — modified files only
 - **Abort** — exit without staging
 
-This only appears in interactive (TTY) mode. In non-interactive mode, use `-a` or `-A` flags.
+This only appears in interactive (TTY) mode. In non-interactive mode, use `-a` or `--include-untracked` flags.
+
+## Flags
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--yes` | `-y` | Generate one message and commit immediately (implies `-n 1`) |
+| `--num` | `-n` | Number of suggestions to generate (default: 3) |
+| `--all` | `-a` | Stage tracked modified files before committing (git add -u) |
+| `--include-untracked` | | Also stage untracked files (implies `-a`) |
+| `--amend` | | Amend the previous commit |
+| `--context` | `-c` | Provide extra context to guide the AI |
+| `--context-file` | | Read context from a file |
+| `--dry-run` | | Preview generated messages without committing |
+| `--body` | | Generate a commit body (multi-line description) |

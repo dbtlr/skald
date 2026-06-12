@@ -6,4 +6,8 @@
 - [Aliases](aliases.md) — Composable flag shortcuts for commands
 - [Prompts](prompts.md) — Template system, customization, eject workflow
 - [Commit](commit.md) — Generate commit messages, non-interactive and auto modes
+- [PR](pr.md) — PR title/description generation, create and auto-update
+- [Providers](providers.md) — Supported AI providers, configuration, and CLI overrides
+- [Platforms](platforms.md) — GitHub and GitLab setup and platform configuration
 - [Doctor](doctor.md) — Environment validation, auto-fix, diagnostics
+- [Integrations](integrations.md) — Worktrunk, lazygit, fugitive, git hooks (experimental)

@@ -5,7 +5,7 @@
 ### From source (cargo)
 
 ```sh
-cargo install --path crates/skald
+cargo install skald-cli
 ```
 
 This installs the `sk` binary to your Cargo bin directory.
@@ -63,10 +63,10 @@ Stage your changes and generate a commit message:
 sk commit
 
 # Auto-accept the top suggestion, no prompts
-sk commit --auto
+sk commit -y
 
 # Stage all modified files and auto-commit
-sk commit --auto -a
+sk commit -y -a
 ```
 
 ## PR Workflow
@@ -77,23 +77,17 @@ Generate a PR title and description from your branch:
 # Preview what would be created (no side effects)
 sk pr --dry-run
 
-# Generate title suggestions only
-sk pr --title-only
-
 # Interactive PR creation
 sk pr
 
-# Auto-create a PR on GitHub
-sk pr --auto
+# Auto-create a PR on GitHub (or update if one exists)
+sk pr -y
 
 # Push the branch and open a draft PR in one step
-sk pr --auto --draft --push
-
-# Update an existing PR after pushing new commits
-sk pr --push --update
+sk pr -y -d --push
 ```
 
-`sk pr --auto` requires the GitHub CLI (`gh`). See [platforms.md](platforms.md) for setup.
+`sk pr -y` requires the GitHub CLI (`gh`). See [platforms.md](platforms.md) for setup.
 
 ## What's Next
 

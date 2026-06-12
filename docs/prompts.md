@@ -57,16 +57,16 @@ Ejected files include a header comment documenting all available variables. Edit
 
 Existing files are never overwritten by eject.
 
-## Debugging with --show-prompt
+## Debugging Prompts
 
-Use `--show-prompt` to render a template and print it to stdout without calling the AI provider:
+To see the rendered prompt sent to the AI, use trace-level verbosity:
 
 ```bash
-sk commit --show-prompt
-sk pr --show-prompt
+sk commit -vvv
+sk pr -vvv
 ```
 
-This renders the template with mock data so you can verify your customizations before using them.
+The fully rendered prompt (with real diff, context, and template variables resolved) is logged at trace level. Check `~/.config/skald/logs/` or stderr with `-vvv` to inspect it.
 
 ## Tera Syntax
 
