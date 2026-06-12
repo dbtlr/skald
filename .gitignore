@@ -3,3 +3,6 @@
 *.swo
 *~
 .DS_Store
+
+# Saga project binding (local, per-machine)
+.saga.toml
