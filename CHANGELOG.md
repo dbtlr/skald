@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.4.0 — 2026-06-12
+
+### Added
+- Direct Anthropic API provider (`--provider anthropic`) via the genai SDK — generates messages with no `claude` CLI dependency; model aliases (`sonnet`, `opus`, `haiku`) resolve to current Anthropic model IDs
+- Diff compaction pipeline for API providers: filters noise (lock files, build output, generated/minified files, binary diffs) and summarizes the largest files when over the token budget
+- `--api-key` and `--base-url` global flags, with resolution chain: flag → config → env var
+- `--color <auto|always|never>` tri-state flag (replaces `--no-color`; `NO_COLOR` still respected)
+- `--context-file` on `pr`/`mr`
+- New short flags: `-c` (context), `-d` (draft), `-f` (force), `-m` (model); `--cwd` long form for `-C`
+
+### Changed
+- CLI flags overhauled for ecosystem consistency: `--auto` → `-y`/`--yes`, `--extended` → `--body`, `doctor --full` → `doctor --offline`; staging via `-a`/`--all` (tracked) and `--include-untracked`
+- `sk pr` now auto-detects an existing PR for the branch and updates it — `--update` flag removed
+- Removed flags: `--show-prompt` (use `-vvv` trace logging), `--message-only`, `--title-only`, `alias list --source`
+- `integrations` command gated behind the `integrations` cargo feature flag
+
+### Fixed
+- Staging with `-a`/`--include-untracked` is deferred until commit confirmation — canceling the interactive flow no longer leaves your git index modified
+
 ## v0.3.3 — 2026-03-31
 
 ### Fixed
