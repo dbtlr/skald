@@ -126,6 +126,15 @@
         "gpt-5.4",
         "claude-sonnet-4-6"
       ]
+    },
+    "codex-api": {
+      "recommended": "gpt-5.5",
+      "models": [
+        "gpt-5.5",
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.3-codex"
+      ]
     }
   }
 }
