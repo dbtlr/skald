@@ -207,6 +207,33 @@ fn check_provider_cli(name: &str, binary: &str, is_configured: bool) -> CheckRes
     }
 }
 
+/// Check for a Codex ChatGPT-subscription login usable by the `codex-api` provider.
+///
+/// Read-only and offline: inspects `~/.codex/auth.json` without any network call.
+fn check_codex_api_auth(is_configured: bool) -> CheckResult {
+    use crate::providers::codex_auth::{CodexAuthError, load_codex_creds};
+    match load_codex_creds() {
+        Ok(_) => {
+            CheckResult::pass("codex_api_auth", "codex-api: ChatGPT subscription login detected")
+                .with_category(Category::Provider)
+        }
+        Err(CodexAuthError::NotChatgptMode(_)) => CheckResult::warn(
+            "codex_api_auth",
+            "codex-api: Codex is signed in with an API key, not a ChatGPT subscription",
+        )
+        .with_category(Category::Provider)
+        .with_suggestion("Run `codex` and sign in with ChatGPT to use the codex-api provider"),
+        Err(_) if is_configured => CheckResult::fail(
+            "codex_api_auth",
+            "codex-api is the configured provider but no Codex ChatGPT login was found",
+        )
+        .with_category(Category::Provider)
+        .with_suggestion("Run `codex` to sign in, or change the provider in config"),
+        Err(_) => CheckResult::pass("codex_api_auth", "codex-api: no Codex login (optional)")
+            .with_category(Category::Provider),
+    }
+}
+
 pub fn provider_checks(online: bool, configured_provider: &str) -> Vec<CheckResult> {
     debug!(online, configured_provider, "running provider checks");
     let mut results = vec![];
@@ -215,6 +242,8 @@ pub fn provider_checks(online: bool, configured_provider: &str) -> Vec<CheckResu
         let is_configured = name == configured_provider;
         results.push(check_provider_cli(name, binary, is_configured));
     }
+
+    results.push(check_codex_api_auth(configured_provider == "codex-api"));
 
     if online {
         let test_result = Command::new(configured_provider)
@@ -501,8 +530,14 @@ mod tests {
     fn configured_provider_missing_is_fail() {
         // Use a nonsense provider name to ensure it's not installed
         let results = provider_checks(false, "this-provider-does-not-exist-skald-test");
-        // Since the nonsense provider is not in KNOWN_PROVIDERS, no result for it —
-        // just verify we get the expected number of results (one per known provider)
-        assert_eq!(results.len(), KNOWN_PROVIDERS.len());
+        // One result per known CLI provider, plus the codex-api auth check.
+        assert_eq!(results.len(), KNOWN_PROVIDERS.len() + 1);
+    }
+
+    #[test]
+    fn codex_api_auth_check_is_present_offline() {
+        let results = provider_checks(false, "claude");
+        let names: Vec<&str> = results.iter().map(|r| r.name.as_str()).collect();
+        assert!(names.contains(&"codex_api_auth"), "expected codex_api_auth check");
     }
 }

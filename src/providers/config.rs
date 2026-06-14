@@ -52,7 +52,10 @@ static COPILOT: CliProviderConfig = CliProviderConfig {
 static ALL_PROVIDERS: &[&CliProviderConfig] = &[&CLAUDE, &CODEX, &GEMINI, &OPENCODE, &COPILOT];
 
 /// API providers (direct HTTP, not CLI wrappers).
-const API_PROVIDERS: &[&str] = &["anthropic"];
+///
+/// `codex-api` reuses the Codex CLI's ChatGPT-subscription login
+/// (`~/.codex/auth.json`) instead of an API key.
+const API_PROVIDERS: &[&str] = &["anthropic", "codex-api"];
 
 /// Check if a provider name is a known API provider (not a CLI wrapper).
 pub fn is_api_provider(name: &str) -> bool {
@@ -100,18 +103,20 @@ mod tests {
     #[test]
     fn available_provider_names_lists_all() {
         let names = available_provider_names();
-        assert_eq!(names.len(), 6);
+        assert_eq!(names.len(), 7);
         assert!(names.contains(&"claude"));
         assert!(names.contains(&"codex"));
         assert!(names.contains(&"gemini"));
         assert!(names.contains(&"opencode"));
         assert!(names.contains(&"copilot"));
         assert!(names.contains(&"anthropic"));
+        assert!(names.contains(&"codex-api"));
     }
 
     #[test]
-    fn is_api_provider_identifies_anthropic() {
+    fn is_api_provider_identifies_api_providers() {
         assert!(is_api_provider("anthropic"));
+        assert!(is_api_provider("codex-api"));
         assert!(!is_api_provider("claude"));
         assert!(!is_api_provider("codex"));
         assert!(!is_api_provider("unknown"));

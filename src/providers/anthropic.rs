@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use genai::Client;
 use genai::chat::{ChatMessage, ChatOptions, ChatRequest, JsonSpec};
 use genai::resolver::{AuthData, AuthResolver, Endpoint, ServiceTargetResolver};
-use serde::Deserialize;
 
 use crate::engine::compaction::compact_diff;
+use crate::providers::structured::{CommitResponse, PrResponse, schema_value};
 use crate::providers::{CommitContext, PrContent, PrContext, Provider, ProviderError};
 
 /// Direct Anthropic API provider using genai SDK.
@@ -35,25 +35,8 @@ impl AnthropicProvider {
     }
 }
 
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct CommitResponse {
-    messages: Vec<String>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct PrResponse {
-    entries: Vec<PrEntry>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct PrEntry {
-    title: String,
-    body: String,
-}
-
 fn json_spec_from<T: schemars::JsonSchema>(name: &str) -> JsonSpec {
-    let schema = schemars::schema_for!(T);
-    JsonSpec::new(name, serde_json::to_value(schema).expect("schema serialization failed"))
+    JsonSpec::new(name, schema_value::<T>())
 }
 
 fn map_genai_error(e: genai::Error) -> ProviderError {
