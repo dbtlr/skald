@@ -72,10 +72,19 @@ pub fn parse_codex_auth(contents: &str) -> Result<CodexCreds, CodexAuthError> {
         .filter(|s| !s.is_empty())
         .ok_or(CodexAuthError::MissingToken)?;
 
-    let account_id =
-        tokens.and_then(|t| t.get("account_id")).and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let account_id = tokens
+        .and_then(|t| t.get("account_id"))
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| {
+            CodexAuthError::Malformed(
+                "Codex auth is missing tokens.account_id. Run `codex` to re-authenticate."
+                    .to_string(),
+            )
+        })?;
 
-    Ok(CodexCreds { access_token: access_token.to_string(), account_id })
+    Ok(CodexCreds { access_token: access_token.to_string(), account_id: account_id.to_string() })
 }
 
 /// Load credentials from the on-disk Codex auth file.
@@ -135,6 +144,15 @@ mod tests {
     #[test]
     fn rejects_malformed_json() {
         let err = parse_codex_auth("not json {").unwrap_err();
+        assert!(matches!(err, CodexAuthError::Malformed(_)));
+    }
+
+    #[test]
+    fn rejects_missing_account_id() {
+        // account_id becomes the ChatGPT-Account-ID header; an empty one yields an
+        // opaque 401, so surface a clear error instead of defaulting to "".
+        let json = r#"{"auth_mode":"chatgpt","tokens":{"access_token":"access-abc"}}"#;
+        let err = parse_codex_auth(json).unwrap_err();
         assert!(matches!(err, CodexAuthError::Malformed(_)));
     }
 
