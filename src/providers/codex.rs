@@ -100,7 +100,10 @@ pub fn build_responses_body(
 /// Best-effort total token count from the `response.completed` SSE event.
 pub fn total_tokens_from_sse(body: &str) -> Option<u64> {
     for line in body.lines() {
-        let payload = line.strip_prefix("data:")?.trim();
+        let Some(payload) = line.strip_prefix("data:") else {
+            continue;
+        };
+        let payload = payload.trim();
         if payload.is_empty() || payload == "[DONE]" {
             continue;
         }
@@ -343,6 +346,18 @@ mod tests {
     #[test]
     fn extracts_total_tokens_from_completed_event() {
         let sse = "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"total_tokens\":37}}}\n";
+        assert_eq!(total_tokens_from_sse(sse), Some(37));
+    }
+
+    #[test]
+    fn extracts_total_tokens_from_realistic_stream_with_event_lines() {
+        // Real streams interleave `event:` header lines and blank lines before
+        // the `data:` payloads — usage must still be found.
+        let sse = "event: response.created\n\
+                   data: {\"type\":\"response.created\"}\n\
+                   \n\
+                   event: response.completed\n\
+                   data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"total_tokens\":37}}}\n";
         assert_eq!(total_tokens_from_sse(sse), Some(37));
     }
 
