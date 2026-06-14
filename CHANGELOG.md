@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0 — 2026-06-14
+
+### Added
+- Codex API provider (`--provider codex-api`): reuse an existing ChatGPT-subscription Codex login (`~/.codex/auth.json`) to generate commit messages and PR content directly — no API key and no `codex` CLI shell-out. Calls the Codex Responses backend with structured output; defaults to `gpt-5.5`. This is the recommended way to use a Codex subscription.
+- `sk doctor` now reports Codex subscription (`codex-api`) authentication status.
+
 ## v0.4.0 — 2026-06-12
 
 ### Added
