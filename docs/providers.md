@@ -8,9 +8,35 @@ Skald supports multiple AI providers. Providers come in two types: CLI providers
 
 API providers call AI services directly over HTTP. No CLI tool installation required — just an API key.
 
-| Provider | Service | Default Model |
-|----------|---------|---------------|
-| Anthropic | Anthropic API | `claude-sonnet-4` |
+| Provider | Service | Default Model | Auth |
+|----------|---------|---------------|------|
+| Anthropic | Anthropic API | `claude-sonnet-4` | API key |
+| `codex-api` | Codex / ChatGPT backend | `gpt-5.5` | ChatGPT subscription (no API key) |
+
+### Codex via your ChatGPT subscription (`codex-api`)
+
+The `codex-api` provider reuses the login created by the [Codex CLI](https://developers.openai.com/codex/cli) — it reads `~/.codex/auth.json` and calls the Codex inference backend directly. If you've signed into Codex with a **ChatGPT subscription**, `sk` can generate commits and PRs with **no API key and no per-call billing**, riding your existing subscription.
+
+This is the **recommended way to use a Codex subscription** — it's lighter-weight than the `codex` CLI provider, which shells out to the full `codex` binary for every call.
+
+```sh
+# Sign in once with the Codex CLI (ChatGPT account), then:
+sk commit --provider codex-api
+sk pr --auto --provider codex-api
+```
+
+```yaml
+# ~/.config/skald/config.yaml — make it your default
+provider: codex-api
+```
+
+Notes and limits:
+
+- **Requires a ChatGPT-mode Codex login.** If Codex is signed in with an API key instead, use the OpenAI-compatible API-key flow rather than `codex-api`. `sk doctor` reports which mode you're in.
+- **Read-only credentials.** `sk` never writes back to `~/.codex/auth.json`. When the token expires, run `codex` to refresh it — `sk` will not rotate the shared token (doing so would break the Codex CLI).
+- **`codex` vs `codex-api`.** `codex` is the CLI shell-out provider; `codex-api` is this direct path. They are independent — selecting one does not change the other.
+- **Override the model** with `--model` or `providers.codex-api.model` (default `gpt-5.5`). The endpoint can be overridden with `--base-url`, `providers.codex-api.base_url`, or `CODEX_BASE_URL`.
+- The backend is an internal Codex endpoint and may change without notice.
 
 ### API Key Setup
 
@@ -110,6 +136,7 @@ Override the provider or model for a single command:
 sk commit --provider anthropic
 sk commit --provider anthropic --model sonnet
 sk commit --provider codex
+sk commit --provider codex-api          # Codex via ChatGPT subscription (no API key)
 sk commit --provider gemini --model gemini-2.5-flash
 sk pr --auto --provider anthropic --api-key sk-ant-...
 sk pr --auto --provider anthropic --base-url https://your-proxy.example.com

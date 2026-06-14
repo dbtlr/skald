@@ -2,9 +2,12 @@ use async_trait::async_trait;
 
 pub mod anthropic;
 pub mod cli_provider;
+pub mod codex;
+pub mod codex_auth;
 pub mod config;
 pub mod models;
 pub mod resolve;
+pub mod structured;
 
 use crate::engine::config::schema::ResolvedConfig;
 pub use anthropic::AnthropicProvider;
@@ -22,6 +25,26 @@ pub fn create_provider(
     config: &ResolvedConfig,
 ) -> Result<Box<dyn Provider>, ProviderError> {
     if config::is_api_provider(provider_name) {
+        // codex-api reuses the Codex CLI's ChatGPT-subscription login
+        // (~/.codex/auth.json) instead of an API key, so it resolves before the
+        // generic api-key path below.
+        if provider_name == "codex-api" {
+            let resolved_model = resolve::resolve_model(
+                model.as_deref(),
+                config,
+                provider_name,
+                codex::DEFAULT_CODEX_MODEL,
+            );
+            let resolved_url = resolve::resolve_base_url(
+                base_url.as_deref(),
+                config,
+                provider_name,
+                "CODEX_BASE_URL",
+            );
+            let provider = codex::CodexProvider::from_codex_auth(resolved_model, resolved_url)?;
+            return Ok(Box::new(provider));
+        }
+
         let resolved_key = resolve::resolve_api_key(
             api_key.as_deref(),
             config,
