@@ -4,7 +4,9 @@ use genai::chat::{ChatMessage, ChatOptions, ChatRequest, JsonSpec};
 use genai::resolver::{AuthData, AuthResolver, Endpoint, ServiceTargetResolver};
 
 use crate::engine::compaction::compact_diff;
-use crate::providers::structured::{CommitResponse, PrResponse, schema_value};
+use crate::providers::structured::{
+    CommitResponse, PrResponse, parse_commit_messages, parse_pr_entries, schema_value,
+};
 use crate::providers::{CommitContext, PrContent, PrContext, Provider, ProviderError};
 
 /// Direct Anthropic API provider using genai SDK.
@@ -121,40 +123,14 @@ impl Provider for AnthropicProvider {
             "API token usage"
         );
 
-        match serde_json::from_str::<CommitResponse>(text) {
-            Ok(parsed) => {
-                let messages: Vec<String> = parsed
-                    .messages
-                    .into_iter()
-                    .take(count)
-                    .map(|m| m.trim().to_string())
-                    .filter(|m| !m.is_empty())
-                    .collect();
-                if messages.is_empty() {
-                    return Err(ProviderError::Generation {
-                        provider: "anthropic".to_string(),
-                        detail: "API returned no commit messages".to_string(),
-                    });
-                }
-                Ok(messages)
-            }
-            Err(_) => {
-                tracing::debug!("structured parsing failed, falling back to line-based parsing");
-                let messages: Vec<String> = text
-                    .lines()
-                    .map(|l| l.trim().to_string())
-                    .filter(|l| !l.is_empty())
-                    .take(count)
-                    .collect();
-                if messages.is_empty() {
-                    return Err(ProviderError::Generation {
-                        provider: "anthropic".to_string(),
-                        detail: "API returned no commit messages".to_string(),
-                    });
-                }
-                Ok(messages)
-            }
+        let messages = parse_commit_messages(text, count);
+        if messages.is_empty() {
+            return Err(ProviderError::Generation {
+                provider: "anthropic".to_string(),
+                detail: "API returned no commit messages".to_string(),
+            });
         }
+        Ok(messages)
     }
 
     async fn generate_pr_content(
@@ -197,37 +173,14 @@ impl Provider for AnthropicProvider {
             "API token usage"
         );
 
-        match serde_json::from_str::<PrResponse>(text) {
-            Ok(parsed) => {
-                let entries: Vec<PrContent> = parsed
-                    .entries
-                    .into_iter()
-                    .take(count)
-                    .map(|e| PrContent {
-                        title: e.title.trim().to_string(),
-                        body: e.body.trim().to_string(),
-                    })
-                    .collect();
-                if entries.is_empty() {
-                    return Err(ProviderError::Generation {
-                        provider: "anthropic".to_string(),
-                        detail: "API returned no PR content".to_string(),
-                    });
-                }
-                Ok(entries)
-            }
-            Err(_) => {
-                tracing::debug!("structured parsing failed, falling back to text-based parsing");
-                let entries = crate::providers::cli_provider::parse_pr_response(text, count);
-                if entries.is_empty() {
-                    return Err(ProviderError::Generation {
-                        provider: "anthropic".to_string(),
-                        detail: "API returned no PR content".to_string(),
-                    });
-                }
-                Ok(entries)
-            }
+        let entries = parse_pr_entries(text, count);
+        if entries.is_empty() {
+            return Err(ProviderError::Generation {
+                provider: "anthropic".to_string(),
+                detail: "API returned no PR content".to_string(),
+            });
         }
+        Ok(entries)
     }
 }
 

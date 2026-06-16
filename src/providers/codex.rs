@@ -12,7 +12,9 @@ use serde_json::{Value, json};
 
 use crate::engine::compaction::compact_diff;
 use crate::providers::codex_auth::{CodexCreds, load_codex_creds};
-use crate::providers::structured::{CommitResponse, PrResponse, schema_value};
+use crate::providers::structured::{
+    CommitResponse, PrResponse, parse_commit_messages, parse_pr_entries, schema_value,
+};
 use crate::providers::{CommitContext, PrContent, PrContext, Provider, ProviderError};
 
 /// Codex inference backend (ChatGPT-subscription auth).
@@ -230,23 +232,7 @@ impl Provider for CodexProvider {
             )
             .await?;
 
-        let messages = match serde_json::from_str::<CommitResponse>(&text) {
-            Ok(parsed) => parsed
-                .messages
-                .into_iter()
-                .take(count)
-                .map(|m| m.trim().to_string())
-                .filter(|m| !m.is_empty())
-                .collect::<Vec<_>>(),
-            Err(_) => {
-                tracing::debug!("structured parse failed, falling back to line-based parsing");
-                text.lines()
-                    .map(|l| l.trim().to_string())
-                    .filter(|l| !l.is_empty())
-                    .take(count)
-                    .collect()
-            }
-        };
+        let messages = parse_commit_messages(&text, count);
 
         if messages.is_empty() {
             return Err(ProviderError::Generation {
@@ -275,21 +261,7 @@ impl Provider for CodexProvider {
             .run(&ctx.rendered_prompt, &user_message, "pr_response", schema_value::<PrResponse>())
             .await?;
 
-        let entries = match serde_json::from_str::<PrResponse>(&text) {
-            Ok(parsed) => parsed
-                .entries
-                .into_iter()
-                .take(count)
-                .map(|e| PrContent {
-                    title: e.title.trim().to_string(),
-                    body: e.body.trim().to_string(),
-                })
-                .collect::<Vec<_>>(),
-            Err(_) => {
-                tracing::debug!("structured parse failed, falling back to text-based parsing");
-                crate::providers::cli_provider::parse_pr_response(&text, count)
-            }
-        };
+        let entries = parse_pr_entries(&text, count);
 
         if entries.is_empty() {
             return Err(ProviderError::Generation {
