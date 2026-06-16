@@ -79,31 +79,10 @@ fn check_glab() -> CheckResult {
 
 pub fn config_checks(fix: bool) -> Vec<CheckResult> {
     debug!(fix, "running configuration checks");
-    vec![check_config_dir(fix), check_config_file(fix), check_project_config()]
-}
-
-fn check_config_dir(fix: bool) -> CheckResult {
-    let dir = config::config_dir();
-    debug!(path = %dir.display(), "checking config directory");
-
-    if dir.is_dir() {
-        return CheckResult::pass("config_dir", &format!("{}", dir.display()))
-            .with_category(Category::Configuration);
-    }
-
-    if fix {
-        match std::fs::create_dir_all(&dir) {
-            Ok(()) => CheckResult::fixed("config_dir", &format!("created {}", dir.display()))
-                .with_category(Category::Configuration)
-                .with_was("missing"),
-            Err(e) => CheckResult::fail("config_dir", &format!("failed to create: {e}"))
-                .with_category(Category::Configuration),
-        }
-    } else {
-        CheckResult::fail("config_dir", &format!("{} does not exist", dir.display()))
-            .with_category(Category::Configuration)
-            .with_suggestion(&format!("Run `sk doctor --fix` or `mkdir -p {}`", dir.display()))
-    }
+    // The config directory itself is guaranteed to exist: logging init creates
+    // it (and the log dir beneath it) at startup, before any command runs. So
+    // there is no missing-config-dir state for doctor to diagnose or fix.
+    vec![check_config_file(fix), check_project_config()]
 }
 
 fn check_config_file(fix: bool) -> CheckResult {
@@ -124,12 +103,13 @@ fn check_config_file(fix: bool) -> CheckResult {
         }
     } else if fix {
         let dir = config::config_dir();
-        if !dir.is_dir() {
-            return CheckResult::fail(
-                "config_file",
-                "config directory does not exist; fix config_dir first",
-            )
-            .with_category(Category::Configuration);
+        // Defensive: logging init creates this at startup, so it should already
+        // exist by the time --fix runs. Create it rather than fail if not.
+        if !dir.is_dir()
+            && let Err(e) = std::fs::create_dir_all(&dir)
+        {
+            return CheckResult::fail("config_file", &format!("failed to create config dir: {e}"))
+                .with_category(Category::Configuration);
         }
         let default_config = "# Skald configuration\n# See: https://github.com/skald-cli/skald\n";
         match std::fs::write(&path, default_config) {
@@ -339,30 +319,9 @@ pub fn provider_checks(online: bool, configured_provider: &str) -> Vec<CheckResu
 
 pub fn maintenance_checks(fix: bool) -> Vec<CheckResult> {
     debug!(fix, "running maintenance checks");
-    vec![check_log_dir(fix), check_stale_logs(fix), check_version()]
-}
-
-fn check_log_dir(fix: bool) -> CheckResult {
-    let dir = config::log_dir();
-
-    if dir.is_dir() {
-        return CheckResult::pass("log_dir", &format!("{}", dir.display()))
-            .with_category(Category::Maintenance);
-    }
-
-    if fix {
-        match std::fs::create_dir_all(&dir) {
-            Ok(()) => CheckResult::fixed("log_dir", &format!("created {}", dir.display()))
-                .with_category(Category::Maintenance)
-                .with_was("missing"),
-            Err(e) => CheckResult::fail("log_dir", &format!("failed to create: {e}"))
-                .with_category(Category::Maintenance),
-        }
-    } else {
-        CheckResult::warn("log_dir", &format!("{} does not exist", dir.display()))
-            .with_category(Category::Maintenance)
-            .with_suggestion(&format!("Run `sk doctor --fix` or `mkdir -p {}`", dir.display()))
-    }
+    // The log dir is created by logging init at startup, so (like config_dir)
+    // there is no missing-log-dir state for doctor to diagnose or fix.
+    vec![check_stale_logs(fix), check_version()]
 }
 
 fn count_stale_logs(retention_days: u64) -> std::io::Result<usize> {
@@ -482,17 +441,20 @@ mod tests {
 
     #[test]
     #[serial]
-    fn config_fix_creates_dir() {
+    fn config_fix_creates_file() {
+        // --fix's surviving job is to write a default config file. The config
+        // dir is normally created by logging init; the fix path creates it
+        // defensively if absent, then writes the file.
         let tmp = tempfile::tempdir().unwrap();
         let config_home = tmp.path().join("unique_config_fix_test");
         unsafe { std::env::set_var("XDG_CONFIG_HOME", &config_home) };
 
-        let dir = config::config_dir();
-        assert!(!dir.exists());
+        let path = config::global_config_path();
+        assert!(!path.exists());
 
-        let result = check_config_dir(true);
+        let result = check_config_file(true);
         assert_eq!(result.status, super::super::CheckStatus::Fixed);
-        assert!(dir.exists());
+        assert!(path.exists());
 
         unsafe { std::env::remove_var("XDG_CONFIG_HOME") };
     }

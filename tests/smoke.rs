@@ -218,12 +218,16 @@ fn doctor_json_format() {
 #[test]
 fn doctor_fix_flag() {
     let tmp = tempfile::tempdir().unwrap();
-    // Run with --fix in a temp config home so config_dir gets created
+    // --fix writes a default config file (the dir itself is created by logging
+    // init on startup, so it always exists regardless of --fix).
     sk().args(["doctor", "--fix"])
         .env("XDG_CONFIG_HOME", tmp.path())
         .assert()
         .code(predicate::in_iter([0, 1]));
-    assert!(tmp.path().join("skald").exists(), "expected config dir to be created by --fix");
+    assert!(
+        tmp.path().join("skald").join("config.yaml").exists(),
+        "expected config file to be created by --fix"
+    );
 }
 
 #[test]
