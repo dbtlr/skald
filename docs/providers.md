@@ -102,6 +102,8 @@ CLI providers shell out to an installed binary on your system.
 | OpenCode | `opencode` | [OpenCode](https://opencode.ai) |
 | Copilot | `copilot` | [Copilot CLI](https://docs.github.com/copilot) |
 
+> For Codex, prefer the [`codex`](#codex-via-your-chatgpt-subscription-codex) API provider above — it rides your ChatGPT subscription directly and is faster than `codex-cli`, which spawns the full `codex` binary on every call. Reach for `codex-cli` only if you specifically need the CLI's own behavior.
+
 ## Configuration
 
 Set your default provider in config:
@@ -138,7 +140,6 @@ Override the provider or model for a single command:
 sk commit --provider anthropic
 sk commit --provider anthropic --model sonnet
 sk commit --provider codex               # Codex via ChatGPT subscription (no API key)
-sk commit --provider codex-cli           # Codex CLI shell-out
 sk commit --provider gemini --model gemini-2.5-flash
 sk pr --auto --provider anthropic --api-key sk-ant-...
 sk pr --auto --provider anthropic --base-url https://your-proxy.example.com
@@ -150,7 +151,7 @@ Run `sk config init` to set up your provider interactively, or specify directly:
 
 ```sh
 sk config init --provider anthropic
-sk config init --provider codex-cli --model gpt-4o
+sk config init --provider codex
 ```
 
 ## Migrating from `codex-api` / `codex`
