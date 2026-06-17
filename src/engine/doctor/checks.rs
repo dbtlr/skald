@@ -193,10 +193,8 @@ fn check_provider_cli(name: &str, binary: &str, is_configured: bool) -> CheckRes
 fn check_codex_auth(is_configured: bool) -> CheckResult {
     use crate::providers::codex_auth::{CodexAuthError, load_codex_creds};
     match load_codex_creds() {
-        Ok(_) => {
-            CheckResult::pass("codex_auth", "codex: ChatGPT subscription login detected")
-                .with_category(Category::Provider)
-        }
+        Ok(_) => CheckResult::pass("codex_auth", "codex: ChatGPT subscription login detected")
+            .with_category(Category::Provider),
         Err(CodexAuthError::NotChatgptMode(_)) => CheckResult::warn(
             "codex_auth",
             "codex: Codex is signed in with an API key, not a ChatGPT subscription",
