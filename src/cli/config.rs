@@ -1,7 +1,7 @@
 use crate::engine::config::{ResolvedConfig, global_config_path};
 use crate::engine::output::OutputFormat;
 use crate::providers::config::{
-    available_provider_names, get_provider_config, is_provider_available,
+    available_provider_names, get_provider_config, is_api_provider, is_provider_available,
 };
 use crate::providers::models::{get_model_list, get_opencode_models, models_for_provider};
 
@@ -160,7 +160,7 @@ fn resolve_init_model(model_arg: Option<&str>, provider: &str, is_tty: bool) -> 
 pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: bool) -> i32 {
     // With --provider flag: validate, check availability, write directly
     if let Some(provider) = provider_arg {
-        if get_provider_config(provider).is_none() {
+        if get_provider_config(provider).is_none() && !is_api_provider(provider) {
             let known = available_provider_names().join(", ");
             cliclack::log::error(format!(
                 "Unknown provider '{provider}'. Known providers: {known}"
@@ -169,8 +169,13 @@ pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: boo
             return 1;
         }
         if !is_provider_available(provider) {
+            let detail = if is_api_provider(provider) {
+                "no credentials detected yet"
+            } else {
+                "binary not found in PATH"
+            };
             cliclack::log::warning(format!(
-                "Provider '{provider}' binary not found in PATH. Config will be written anyway."
+                "Provider '{provider}' {detail}. Config will be written anyway."
             ))
             .ok();
         }

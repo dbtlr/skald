@@ -80,7 +80,22 @@ pub fn is_provider_available(name: &str) -> bool {
             .output()
             .map(|o| o.status.success())
             .unwrap_or(false),
-        None => false,
+        // API providers aren't binaries in PATH — detect them by whether usable
+        // credentials are present right now.
+        None => api_provider_has_credentials(name),
+    }
+}
+
+/// Whether an API provider has usable credentials available right now, used by
+/// `config init` to decide which providers to offer.
+///
+/// `codex` rides the Codex ChatGPT-subscription login (`~/.codex/auth.json`);
+/// `anthropic` uses an API key from the environment.
+fn api_provider_has_credentials(name: &str) -> bool {
+    match name {
+        "codex" => crate::providers::codex_auth::load_codex_creds().is_ok(),
+        "anthropic" => std::env::var("ANTHROPIC_API_KEY").is_ok_and(|v| !v.is_empty()),
+        _ => false,
     }
 }
 
@@ -175,13 +190,22 @@ mod tests {
 
     #[test]
     fn is_provider_available_does_not_panic() {
-        // Just verify it doesn't panic for known and unknown providers
+        // Just verify it doesn't panic for CLI, API, and unknown providers
         let _ = is_provider_available("claude");
         let _ = is_provider_available("codex-cli");
         let _ = is_provider_available("gemini");
         let _ = is_provider_available("opencode");
         let _ = is_provider_available("copilot");
+        let _ = is_provider_available("codex");
+        let _ = is_provider_available("anthropic");
         let _ = is_provider_available("unknown");
         let _ = is_provider_available("");
+    }
+
+    #[test]
+    fn api_provider_has_credentials_rejects_non_api_names() {
+        assert!(!api_provider_has_credentials("claude"));
+        assert!(!api_provider_has_credentials("codex-cli"));
+        assert!(!api_provider_has_credentials("unknown"));
     }
 }
