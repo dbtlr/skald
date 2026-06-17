@@ -55,8 +55,8 @@ providers:
     base_url: https://api.anthropic.com
   claude:
     model: claude-sonnet-4-20250514
-  codex-cli:
-    model: gpt-4o
+  codex:
+    model: gpt-5.5
   gemini:
     model: gemini-2.5-flash
 
