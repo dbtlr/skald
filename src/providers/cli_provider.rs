@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     fn cli_provider_with_all_configs() {
-        for name in ["claude", "codex", "gemini", "opencode", "copilot"] {
+        for name in ["claude", "codex-cli", "gemini", "opencode", "copilot"] {
             let config = get_provider_config(name).unwrap();
             let _provider = CliProvider::new(config, None);
             let _provider_with_model = CliProvider::new(config, Some("test-model".into()));

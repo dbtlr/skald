@@ -28,7 +28,7 @@ This walks you through selecting a provider (Claude, Codex, Gemini, OpenCode, or
 
 ```sh
 sk config init --provider claude
-sk config init --provider codex --model gpt-4o
+sk config init --provider codex-cli --model gpt-4o
 ```
 
 See [providers.md](providers.md) for the full list of supported providers and install links.

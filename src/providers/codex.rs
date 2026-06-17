@@ -19,7 +19,7 @@ use crate::providers::{CommitContext, PrContent, PrContext, Provider, ProviderEr
 
 /// Codex inference backend (ChatGPT-subscription auth).
 pub const DEFAULT_CODEX_BASE_URL: &str = "https://chatgpt.com/backend-api/codex";
-/// Default model for the codex-api provider.
+/// Default model for the codex provider.
 pub const DEFAULT_CODEX_MODEL: &str = "gpt-5.5";
 
 pub struct CodexProvider {
@@ -32,7 +32,7 @@ impl CodexProvider {
     /// Build a provider from the on-disk Codex subscription login.
     pub fn from_codex_auth(model: String, base_url: Option<String>) -> Result<Self, ProviderError> {
         let creds = load_codex_creds().map_err(|e| ProviderError::Unavailable {
-            provider: "codex-api".to_string(),
+            provider: "codex".to_string(),
             detail: e.to_string(),
         })?;
         Ok(Self {
@@ -141,7 +141,7 @@ fn call_codex_blocking(
 
     match result {
         Ok(resp) => resp.into_string().map_err(|e| ProviderError::Generation {
-            provider: "codex-api".to_string(),
+            provider: "codex".to_string(),
             detail: format!("Failed to read Codex response stream: {e}"),
         }),
         Err(ureq::Error::Status(code, resp)) => {
@@ -149,14 +149,14 @@ fn call_codex_blocking(
             Err(map_status_error(code, &detail))
         }
         Err(e) => Err(ProviderError::Unavailable {
-            provider: "codex-api".to_string(),
+            provider: "codex".to_string(),
             detail: format!("Could not reach the Codex backend: {e}"),
         }),
     }
 }
 
 fn map_status_error(code: u16, detail: &str) -> ProviderError {
-    let provider = "codex-api".to_string();
+    let provider = "codex".to_string();
     match code {
         401 | 403 => ProviderError::Unavailable {
             provider,
@@ -206,7 +206,7 @@ impl CodexProvider {
 #[async_trait]
 impl Provider for CodexProvider {
     fn name(&self) -> &str {
-        "codex-api"
+        "codex"
     }
 
     async fn generate_commit_messages(
@@ -236,7 +236,7 @@ impl Provider for CodexProvider {
 
         if messages.is_empty() {
             return Err(ProviderError::Generation {
-                provider: "codex-api".to_string(),
+                provider: "codex".to_string(),
                 detail: "Codex API returned no commit messages".to_string(),
             });
         }
@@ -265,7 +265,7 @@ impl Provider for CodexProvider {
 
         if entries.is_empty() {
             return Err(ProviderError::Generation {
-                provider: "codex-api".to_string(),
+                provider: "codex".to_string(),
                 detail: "Codex API returned no PR content".to_string(),
             });
         }
