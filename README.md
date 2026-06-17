@@ -21,7 +21,7 @@ AI-powered git workflow CLI. Generates commit messages, PR titles, and PR descri
 ### Install script (recommended)
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/dbtlr/skald/main/scripts/install.sh | bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/dbtlr/skald/releases/latest/download/skald-cli-installer.sh | sh
 ```
 
 ### From crates.io

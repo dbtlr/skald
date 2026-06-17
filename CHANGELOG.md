@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Install one-liner now uses the cargo-dist–generated `skald-cli-installer.sh` from the latest release. The previous hand-written `scripts/install.sh` had drifted from cargo-dist's asset naming (`skald-cli-<target>.tar.xz` in a nested directory) and 404'd on download.
+
+### Removed
+- `scripts/install.sh` — superseded by the maintained cargo-dist installer.
+
 ## v0.5.0 — 2026-06-14
 
 ### Added
