@@ -68,8 +68,11 @@ pub fn get_provider_config(name: &str) -> Option<&'static CliProviderConfig> {
 }
 
 pub fn available_provider_names() -> Vec<&'static str> {
-    let mut names: Vec<&str> = ALL_PROVIDERS.iter().map(|p| p.name).collect();
-    names.extend_from_slice(API_PROVIDERS);
+    // API (direct HTTP) providers come first — they're the recommended paths and
+    // should surface ahead of the CLI shell-out providers in `config init` and in
+    // suggestions.
+    let mut names: Vec<&str> = API_PROVIDERS.to_vec();
+    names.extend(ALL_PROVIDERS.iter().map(|p| p.name));
     names
 }
 
