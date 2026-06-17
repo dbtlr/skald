@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- **Breaking — Codex provider rename.** The direct ChatGPT-subscription provider `codex-api` is now `codex` (the recommended Codex path gets the simple name), and the former CLI shell-out provider `codex` is now `codex-cli`. Update `provider:`/`providers:` config keys, `--provider` flags, and aliases accordingly. `codex-api` is no longer accepted; `sk` redirects you to `codex`. A bare `codex` with no ChatGPT login now errors with a pointer to `codex-cli`. `sk doctor`'s Codex auth check is renamed from `codex_api_auth` to `codex_auth`, and the online connectivity probe is now skipped for API providers. See [docs/providers.md](docs/providers.md#migrating-from-codex-api--codex).
+
 ### Fixed
 - Install one-liner now uses the cargo-dist–generated `skald-cli-installer.sh` from the latest release. The previous hand-written `scripts/install.sh` had drifted from cargo-dist's asset naming (`skald-cli-<target>.tar.xz` in a nested directory) and 404'd on download.
 

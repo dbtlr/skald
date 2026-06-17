@@ -207,10 +207,10 @@ def update_provider(key, new_json):
         "models": new_models,
     }
 
-update_provider("claude",   anthropic)
-update_provider("codex",    openai)
-update_provider("gemini",   gemini)
-update_provider("copilot",  github)
+update_provider("claude",    anthropic)
+update_provider("codex-cli", openai)  # `codex` (API, ChatGPT-subscription) uses a curated list maintained by hand
+update_provider("gemini",    gemini)
+update_provider("copilot",   github)
 
 doc["updated"]   = today
 doc["providers"] = providers

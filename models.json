@@ -28,7 +28,7 @@
         "claude-sonnet-4-20250514"
       ]
     },
-    "codex": {
+    "codex-cli": {
       "recommended": "gpt-5.4-mini",
       "models": [
         "gpt-4o",
@@ -127,7 +127,7 @@
         "claude-sonnet-4-6"
       ]
     },
-    "codex-api": {
+    "codex": {
       "recommended": "gpt-5.5",
       "models": [
         "gpt-5.5",

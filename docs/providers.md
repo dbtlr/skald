@@ -11,31 +11,33 @@ API providers call AI services directly over HTTP. No CLI tool installation requ
 | Provider | Service | Default Model | Auth |
 |----------|---------|---------------|------|
 | Anthropic | Anthropic API | `claude-sonnet-4` | API key |
-| `codex-api` | Codex / ChatGPT backend | `gpt-5.5` | ChatGPT subscription (no API key) |
+| `codex` | Codex / ChatGPT backend | `gpt-5.5` | ChatGPT subscription (no API key) |
 
-### Codex via your ChatGPT subscription (`codex-api`)
+> **Renamed.** The direct ChatGPT-subscription provider was `codex-api` and is now simply `codex`. The old CLI shell-out provider (previously `codex`) is now `codex-cli`. See [Migration](#migrating-from-codex-api--codex).
 
-The `codex-api` provider reuses the login created by the [Codex CLI](https://developers.openai.com/codex/cli) — it reads `~/.codex/auth.json` and calls the Codex inference backend directly. If you've signed into Codex with a **ChatGPT subscription**, `sk` can generate commits and PRs with **no API key and no per-call billing**, riding your existing subscription.
+### Codex via your ChatGPT subscription (`codex`)
 
-This is the **recommended way to use a Codex subscription** — it's lighter-weight than the `codex` CLI provider, which shells out to the full `codex` binary for every call.
+The `codex` provider reuses the login created by the [Codex CLI](https://developers.openai.com/codex/cli) — it reads `~/.codex/auth.json` and calls the Codex inference backend directly. If you've signed into Codex with a **ChatGPT subscription**, `sk` can generate commits and PRs with **no API key and no per-call billing**, riding your existing subscription.
+
+This is the **recommended way to use Codex** — it's lighter-weight than the `codex-cli` provider, which shells out to the full `codex` binary for every call.
 
 ```sh
 # Sign in once with the Codex CLI (ChatGPT account), then:
-sk commit --provider codex-api
-sk pr --auto --provider codex-api
+sk commit --provider codex
+sk pr --auto --provider codex
 ```
 
 ```yaml
 # ~/.config/skald/config.yaml — make it your default
-provider: codex-api
+provider: codex
 ```
 
 Notes and limits:
 
-- **Requires a ChatGPT-mode Codex login.** If Codex is signed in with an API key instead, use the OpenAI-compatible API-key flow rather than `codex-api`. `sk doctor` reports which mode you're in.
+- **Requires a ChatGPT-mode Codex login.** If Codex is signed in with an API key instead, use the OpenAI-compatible API-key flow rather than `codex`. `sk doctor` reports which mode you're in.
 - **Read-only credentials.** `sk` never writes back to `~/.codex/auth.json`. When the token expires, run `codex` to refresh it — `sk` will not rotate the shared token (doing so would break the Codex CLI).
-- **`codex` vs `codex-api`.** `codex` is the CLI shell-out provider; `codex-api` is this direct path. They are independent — selecting one does not change the other.
-- **Override the model** with `--model` or `providers.codex-api.model` (default `gpt-5.5`). The endpoint can be overridden with `--base-url`, `providers.codex-api.base_url`, or `CODEX_BASE_URL`.
+- **`codex` vs `codex-cli`.** `codex` is this direct ChatGPT-subscription path; `codex-cli` is the CLI shell-out provider. They are independent — selecting one does not change the other.
+- **Override the model** with `--model` or `providers.codex.model` (default `gpt-5.5`). The endpoint can be overridden with `--base-url`, `providers.codex.base_url`, or `CODEX_BASE_URL`.
 - The backend is an internal Codex endpoint and may change without notice.
 
 ### API Key Setup
@@ -95,7 +97,7 @@ CLI providers shell out to an installed binary on your system.
 | Provider | CLI Binary | Install |
 |----------|-----------|---------|
 | Claude | `claude` | [Claude Code](https://claude.ai/code) |
-| Codex | `codex` | [Codex CLI](https://developers.openai.com/codex/cli) |
+| `codex-cli` | `codex` | [Codex CLI](https://developers.openai.com/codex/cli) |
 | Gemini | `gemini` | [Gemini CLI](https://github.com/google-gemini/gemini-cli) |
 | OpenCode | `opencode` | [OpenCode](https://opencode.ai) |
 | Copilot | `copilot` | [Copilot CLI](https://docs.github.com/copilot) |
@@ -135,8 +137,8 @@ Override the provider or model for a single command:
 ```sh
 sk commit --provider anthropic
 sk commit --provider anthropic --model sonnet
-sk commit --provider codex
-sk commit --provider codex-api          # Codex via ChatGPT subscription (no API key)
+sk commit --provider codex               # Codex via ChatGPT subscription (no API key)
+sk commit --provider codex-cli           # Codex CLI shell-out
 sk commit --provider gemini --model gemini-2.5-flash
 sk pr --auto --provider anthropic --api-key sk-ant-...
 sk pr --auto --provider anthropic --base-url https://your-proxy.example.com
@@ -148,8 +150,22 @@ Run `sk config init` to set up your provider interactively, or specify directly:
 
 ```sh
 sk config init --provider anthropic
-sk config init --provider codex --model gpt-4o
+sk config init --provider codex-cli --model gpt-4o
 ```
+
+## Migrating from `codex-api` / `codex`
+
+The Codex providers were renamed so the recommended path has the simplest name:
+
+| Before | After | What it is |
+|--------|-------|------------|
+| `codex-api` | `codex` | Direct ChatGPT-subscription path (recommended) |
+| `codex` | `codex-cli` | Shell-out to the `codex` binary |
+
+To migrate:
+
+- If you used **`codex-api`**, change it to **`codex`** (in config `provider:`/`providers:` keys, `--provider` flags, and aliases). `codex-api` is no longer accepted — `sk` will point you to `codex`.
+- If you used **`codex`** (the CLI shell-out), change it to **`codex-cli`**. Note that a bare `codex` now means the ChatGPT-subscription path; if no ChatGPT login is found, `sk` errors and points you to `codex-cli`.
 
 ## Verification
 

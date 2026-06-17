@@ -17,8 +17,8 @@ static CLAUDE: CliProviderConfig = CliProviderConfig {
     model_flag: "--model",
 };
 
-static CODEX: CliProviderConfig = CliProviderConfig {
-    name: "codex",
+static CODEX_CLI: CliProviderConfig = CliProviderConfig {
+    name: "codex-cli",
     binary: "codex",
     prompt_args: &["exec"],
     tool_args: &["--sandbox", "read-only"],
@@ -49,13 +49,14 @@ static COPILOT: CliProviderConfig = CliProviderConfig {
     model_flag: "--model",
 };
 
-static ALL_PROVIDERS: &[&CliProviderConfig] = &[&CLAUDE, &CODEX, &GEMINI, &OPENCODE, &COPILOT];
+static ALL_PROVIDERS: &[&CliProviderConfig] = &[&CLAUDE, &CODEX_CLI, &GEMINI, &OPENCODE, &COPILOT];
 
 /// API providers (direct HTTP, not CLI wrappers).
 ///
-/// `codex-api` reuses the Codex CLI's ChatGPT-subscription login
-/// (`~/.codex/auth.json`) instead of an API key.
-const API_PROVIDERS: &[&str] = &["anthropic", "codex-api"];
+/// `codex` reuses the Codex CLI's ChatGPT-subscription login
+/// (`~/.codex/auth.json`) instead of an API key. The `codex-cli` provider is
+/// the separate shell-out to the `codex` binary.
+const API_PROVIDERS: &[&str] = &["anthropic", "codex"];
 
 /// Check if a provider name is a known API provider (not a CLI wrapper).
 pub fn is_api_provider(name: &str) -> bool {
@@ -89,7 +90,7 @@ mod tests {
 
     #[test]
     fn all_five_providers_resolve() {
-        for name in ["claude", "codex", "gemini", "opencode", "copilot"] {
+        for name in ["claude", "codex-cli", "gemini", "opencode", "copilot"] {
             assert!(get_provider_config(name).is_some(), "provider '{name}' should resolve");
         }
     }
@@ -105,20 +106,20 @@ mod tests {
         let names = available_provider_names();
         assert_eq!(names.len(), 7);
         assert!(names.contains(&"claude"));
-        assert!(names.contains(&"codex"));
+        assert!(names.contains(&"codex-cli"));
         assert!(names.contains(&"gemini"));
         assert!(names.contains(&"opencode"));
         assert!(names.contains(&"copilot"));
         assert!(names.contains(&"anthropic"));
-        assert!(names.contains(&"codex-api"));
+        assert!(names.contains(&"codex"));
     }
 
     #[test]
     fn is_api_provider_identifies_api_providers() {
         assert!(is_api_provider("anthropic"));
-        assert!(is_api_provider("codex-api"));
+        assert!(is_api_provider("codex"));
         assert!(!is_api_provider("claude"));
-        assert!(!is_api_provider("codex"));
+        assert!(!is_api_provider("codex-cli"));
         assert!(!is_api_provider("unknown"));
     }
 
@@ -134,8 +135,8 @@ mod tests {
 
     #[test]
     fn codex_config_has_correct_fields() {
-        let config = get_provider_config("codex").unwrap();
-        assert_eq!(config.name, "codex");
+        let config = get_provider_config("codex-cli").unwrap();
+        assert_eq!(config.name, "codex-cli");
         assert_eq!(config.binary, "codex");
         assert_eq!(config.prompt_args, &["exec"]);
         assert_eq!(config.tool_args, &["--sandbox", "read-only"]);
@@ -176,7 +177,7 @@ mod tests {
     fn is_provider_available_does_not_panic() {
         // Just verify it doesn't panic for known and unknown providers
         let _ = is_provider_available("claude");
-        let _ = is_provider_available("codex");
+        let _ = is_provider_available("codex-cli");
         let _ = is_provider_available("gemini");
         let _ = is_provider_available("opencode");
         let _ = is_provider_available("copilot");

@@ -33,7 +33,7 @@ Shows all resolved values with their sources (`default`, `global`, or `project`)
 ## Config Schema
 
 ```yaml
-# AI provider (anthropic, claude, codex, gemini, opencode, copilot)
+# AI provider (anthropic, claude, codex, codex-cli, gemini, opencode, copilot)
 provider: claude
 
 # Language for generated messages
@@ -55,7 +55,7 @@ providers:
     base_url: https://api.anthropic.com
   claude:
     model: claude-sonnet-4-20250514
-  codex:
+  codex-cli:
     model: gpt-4o
   gemini:
     model: gemini-2.5-flash

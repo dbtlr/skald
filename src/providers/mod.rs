@@ -25,10 +25,11 @@ pub fn create_provider(
     config: &ResolvedConfig,
 ) -> Result<Box<dyn Provider>, ProviderError> {
     if config::is_api_provider(provider_name) {
-        // codex-api reuses the Codex CLI's ChatGPT-subscription login
+        // `codex` reuses the Codex CLI's ChatGPT-subscription login
         // (~/.codex/auth.json) instead of an API key, so it resolves before the
-        // generic api-key path below.
-        if provider_name == "codex-api" {
+        // generic api-key path below. (The `codex-cli` provider is the separate
+        // shell-out to the `codex` binary.)
+        if provider_name == "codex" {
             let resolved_model = resolve::resolve_model(
                 model.as_deref(),
                 config,
@@ -41,7 +42,23 @@ pub fn create_provider(
                 provider_name,
                 "CODEX_BASE_URL",
             );
-            let provider = codex::CodexProvider::from_codex_auth(resolved_model, resolved_url)?;
+            let provider =
+                codex::CodexProvider::from_codex_auth(resolved_model, resolved_url).map_err(
+                    |e| match e {
+                        // The `codex` name now means the ChatGPT-subscription API
+                        // path. Anyone who configured `codex` expecting the old CLI
+                        // shell-out lands here — point them at `codex-cli`.
+                        ProviderError::Unavailable { provider, detail } => {
+                            ProviderError::Unavailable {
+                                provider,
+                                detail: format!(
+                                    "{detail}\n\nNote: `codex` now uses your ChatGPT subscription directly. For the Codex CLI shell-out, use `--provider codex-cli`."
+                                ),
+                            }
+                        }
+                        other => other,
+                    },
+                )?;
             return Ok(Box::new(provider));
         }
 
@@ -82,10 +99,16 @@ pub fn create_provider(
         }
     } else {
         let provider_config = config::get_provider_config(provider_name).ok_or_else(|| {
+            // `codex-api` was renamed to `codex`; redirect rather than fail blankly.
+            let hint = if provider_name == "codex-api" {
+                " Did you mean `codex`? (The `codex-api` provider was renamed to `codex`.)"
+            } else {
+                ""
+            };
             ProviderError::Unavailable {
                 provider: provider_name.to_string(),
                 detail: format!(
-                    "Unknown provider '{}'. Available: {}",
+                    "Unknown provider '{}'. Available: {}.{hint}",
                     provider_name,
                     config::available_provider_names().join(", ")
                 ),

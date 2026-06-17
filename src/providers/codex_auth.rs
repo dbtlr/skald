@@ -29,7 +29,7 @@ pub enum CodexAuthError {
     NotFound(PathBuf),
 
     #[error(
-        "Codex auth at {0} is in API-key mode, not ChatGPT subscription mode.\n\nThe `codex-api` provider needs a ChatGPT login — run `codex` and sign in with ChatGPT."
+        "Codex auth at {0} is in API-key mode, not ChatGPT subscription mode.\n\nThe `codex` provider needs a ChatGPT login — run `codex` and sign in with ChatGPT."
     )]
     NotChatgptMode(PathBuf),
 
