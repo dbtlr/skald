@@ -154,6 +154,21 @@ sk config init --provider anthropic
 sk config init --provider codex
 ```
 
+The interactive picker lists **every** provider with its current readiness, so
+the choice is always yours to make — nothing is hidden based on ambient state:
+
+| Label | Meaning |
+|-------|---------|
+| `ready` | Usable now — CLI binary is on your PATH, or API credentials resolve. |
+| `needs setup` | An API provider you can pick now; `sk` writes the config and tells you how to add credentials. |
+| `not installed` | A CLI provider whose binary isn't on your PATH yet. |
+
+Picking a `needs setup` or `not installed` provider still writes the config —
+invoking the command is the intent — and prints the next step (set the API key,
+or install the CLI). Readiness for API providers is computed from the same
+credential chain `sk` uses at runtime (`--api-key` → `providers.<name>.api_key`
+→ environment variable), so what you see is what will actually be used.
+
 ## Migrating from `codex-api` / `codex`
 
 The Codex providers were renamed so the recommended path has the simplest name:
