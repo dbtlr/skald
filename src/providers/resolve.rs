@@ -1,6 +1,26 @@
 use crate::engine::config::schema::ResolvedConfig;
 use crate::providers::models::resolve_model_alias;
 
+/// The configured `providers.<name>.api_key`, if present and non-empty.
+fn config_api_key<'a>(config: &'a ResolvedConfig, provider_name: &str) -> Option<&'a str> {
+    config.providers.get(provider_name).and_then(|p| p.api_key.as_deref()).filter(|k| !k.is_empty())
+}
+
+/// Whether an API key would resolve for this provider — a non-consuming probe
+/// that emits no error and constructs no key. Mirrors `resolve_api_key`'s
+/// config→env sources; the `--api-key` explicit source is never present at
+/// detection time, so it is intentionally omitted.
+pub fn can_resolve_api_key(
+    config: Option<&ResolvedConfig>,
+    provider_name: &str,
+    default_env_var: &str,
+) -> bool {
+    if config.and_then(|c| config_api_key(c, provider_name)).is_some() {
+        return true;
+    }
+    std::env::var(default_env_var).is_ok_and(|v| !v.is_empty())
+}
+
 /// Resolve the API key for an API provider.
 ///
 /// Resolution chain: explicit value → config providers.<name>.api_key → default env var → error
@@ -18,11 +38,8 @@ pub fn resolve_api_key(
     }
 
     // 2. Config: providers.<name>.api_key (already env-expanded by config loader)
-    if let Some(provider_cfg) = config.providers.get(provider_name)
-        && let Some(ref key) = provider_cfg.api_key
-        && !key.is_empty()
-    {
-        return Ok(key.clone());
+    if let Some(key) = config_api_key(config, provider_name) {
+        return Ok(key.to_string());
     }
 
     // 3. Default env var for this provider
@@ -228,5 +245,43 @@ mod tests {
             "claude-sonnet-4",
         );
         assert_eq!(result, "claude-sonnet-4-20250514");
+    }
+
+    // --- can_resolve_api_key tests ---
+
+    #[test]
+    fn can_resolve_from_config_key() {
+        let config = config_with_provider(Some("sk-config"), None, None);
+        assert!(can_resolve_api_key(
+            Some(&config),
+            "anthropic",
+            "SKALD_TEST_NONEXISTENT_KEY_12345"
+        ));
+    }
+
+    #[test]
+    fn can_resolve_false_when_absent() {
+        let config = empty_config();
+        assert!(!can_resolve_api_key(
+            Some(&config),
+            "anthropic",
+            "SKALD_TEST_NONEXISTENT_KEY_12345"
+        ));
+    }
+
+    #[test]
+    fn can_resolve_none_config_falls_to_env() {
+        // No config and a guaranteed-absent env var → not resolvable.
+        assert!(!can_resolve_api_key(None, "anthropic", "SKALD_TEST_NONEXISTENT_KEY_12345"));
+    }
+
+    #[test]
+    fn can_resolve_agrees_with_resolve_api_key() {
+        let config = config_with_provider(Some("sk-config"), None, None);
+        let resolved =
+            resolve_api_key(None, &config, "anthropic", "SKALD_TEST_NONEXISTENT_KEY_12345").is_ok();
+        let probed =
+            can_resolve_api_key(Some(&config), "anthropic", "SKALD_TEST_NONEXISTENT_KEY_12345");
+        assert_eq!(resolved, probed);
     }
 }
