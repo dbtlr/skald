@@ -1,7 +1,8 @@
 use crate::engine::config::{ResolvedConfig, global_config_path};
 use crate::engine::output::OutputFormat;
 use crate::providers::config::{
-    available_provider_names, get_provider_config, is_api_provider, is_provider_available,
+    ProviderReadiness, available_provider_names, get_provider_config, is_api_provider,
+    provider_readiness,
 };
 use crate::providers::models::{get_model_list, get_opencode_models, models_for_provider};
 
@@ -168,7 +169,7 @@ pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: boo
             .ok();
             return 1;
         }
-        if !is_provider_available(provider) {
+        if provider_readiness(provider, None) != ProviderReadiness::Ready {
             let detail = if is_api_provider(provider) {
                 "no credentials detected yet"
             } else {
@@ -183,8 +184,11 @@ pub fn run_init(provider_arg: Option<&str>, model_arg: Option<&str>, is_tty: boo
     }
 
     let all_names = available_provider_names();
-    let found: Vec<&str> =
-        all_names.iter().copied().filter(|name| is_provider_available(name)).collect();
+    let found: Vec<&str> = all_names
+        .iter()
+        .copied()
+        .filter(|name| provider_readiness(name, None) == ProviderReadiness::Ready)
+        .collect();
 
     // Non-interactive: show detection results and suggest command
     if !is_tty {

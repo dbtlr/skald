@@ -118,7 +118,7 @@ pub fn create_provider(
     }
 }
 
-fn default_env_var(provider_name: &str) -> &'static str {
+pub(crate) fn default_env_var(provider_name: &str) -> &'static str {
     match provider_name {
         "anthropic" => "ANTHROPIC_API_KEY",
         _ => "",

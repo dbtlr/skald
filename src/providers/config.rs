@@ -1,5 +1,7 @@
 use std::process::Command;
 
+use crate::engine::config::schema::ResolvedConfig;
+
 #[derive(Debug, Clone)]
 pub struct CliProviderConfig {
     pub name: &'static str,
@@ -76,30 +78,44 @@ pub fn available_provider_names() -> Vec<&'static str> {
     names
 }
 
-pub fn is_provider_available(name: &str) -> bool {
-    match get_provider_config(name) {
-        Some(config) => Command::new("which")
-            .arg(config.binary)
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false),
-        // API providers aren't binaries in PATH — detect them by whether usable
-        // credentials are present right now.
-        None => api_provider_has_credentials(name),
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProviderReadiness {
+    Ready,
+    NeedsSetup,
+    NotInstalled,
 }
 
-/// Whether an API provider has usable credentials available right now, used by
-/// `config init` to decide which providers to offer.
+/// Whether a CLI binary resolves on the PATH.
+fn binary_in_path(binary: &str) -> bool {
+    Command::new("which").arg(binary).output().map(|o| o.status.success()).unwrap_or(false)
+}
+
+/// Advisory readiness of a provider for `config init` — a label, never a gate.
 ///
-/// `codex` rides the Codex ChatGPT-subscription login (`~/.codex/auth.json`);
-/// `anthropic` uses an API key from the environment.
-fn api_provider_has_credentials(name: &str) -> bool {
-    match name {
-        "codex" => crate::providers::codex_auth::load_codex_creds().is_ok(),
-        "anthropic" => std::env::var("ANTHROPIC_API_KEY").is_ok_and(|v| !v.is_empty()),
-        _ => false,
+/// CLI providers are `Ready` when their binary is on the PATH, else
+/// `NotInstalled`. API providers are `Ready` when credentials resolve via the
+/// same chain the runtime uses (`can_resolve_api_key` / the codex auth loader),
+/// else `NeedsSetup`.
+pub fn provider_readiness(name: &str, config: Option<&ResolvedConfig>) -> ProviderReadiness {
+    if let Some(cfg) = get_provider_config(name) {
+        return if binary_in_path(cfg.binary) {
+            ProviderReadiness::Ready
+        } else {
+            ProviderReadiness::NotInstalled
+        };
     }
+    if is_api_provider(name) {
+        let has_creds = match name {
+            "codex" => crate::providers::codex_auth::load_codex_creds().is_ok(),
+            _ => crate::providers::resolve::can_resolve_api_key(
+                config,
+                name,
+                crate::providers::default_env_var(name),
+            ),
+        };
+        return if has_creds { ProviderReadiness::Ready } else { ProviderReadiness::NeedsSetup };
+    }
+    ProviderReadiness::NotInstalled
 }
 
 #[cfg(test)]
@@ -192,23 +208,43 @@ mod tests {
     }
 
     #[test]
-    fn is_provider_available_does_not_panic() {
-        // Just verify it doesn't panic for CLI, API, and unknown providers
-        let _ = is_provider_available("claude");
-        let _ = is_provider_available("codex-cli");
-        let _ = is_provider_available("gemini");
-        let _ = is_provider_available("opencode");
-        let _ = is_provider_available("copilot");
-        let _ = is_provider_available("codex");
-        let _ = is_provider_available("anthropic");
-        let _ = is_provider_available("unknown");
-        let _ = is_provider_available("");
+    fn provider_readiness_does_not_panic() {
+        for name in [
+            "claude",
+            "codex-cli",
+            "gemini",
+            "opencode",
+            "copilot",
+            "codex",
+            "anthropic",
+            "unknown",
+            "",
+        ] {
+            let _ = provider_readiness(name, None);
+        }
     }
 
     #[test]
-    fn api_provider_has_credentials_rejects_non_api_names() {
-        assert!(!api_provider_has_credentials("claude"));
-        assert!(!api_provider_has_credentials("codex-cli"));
-        assert!(!api_provider_has_credentials("unknown"));
+    fn anthropic_ready_with_config_key() {
+        use crate::engine::config::schema::{ProviderConfig, ResolvedConfig};
+        use std::collections::HashMap;
+
+        let mut providers = HashMap::new();
+        providers.insert(
+            "anthropic".to_string(),
+            ProviderConfig { model: None, api_key: Some("sk-x".to_string()), base_url: None },
+        );
+        let config = ResolvedConfig {
+            provider: "anthropic".to_string(),
+            language: "English".to_string(),
+            pr_target: "main".to_string(),
+            platform: "github".to_string(),
+            vcs: "git".to_string(),
+            providers,
+            aliases: HashMap::new(),
+            sources: HashMap::new(),
+        };
+
+        assert_eq!(provider_readiness("anthropic", Some(&config)), ProviderReadiness::Ready);
     }
 }
