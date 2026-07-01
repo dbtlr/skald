@@ -4,5 +4,5 @@
 *~
 .DS_Store
 
-# Saga project binding (local, per-machine)
+# Atlas project binding (local, per-machine)
 .atlas.toml
